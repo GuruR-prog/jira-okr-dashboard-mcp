@@ -1,6 +1,5 @@
 import { z } from "zod";
-import type { JiraClient } from "../jira/client.js";
-import type { OkrProgress } from "../jira/types.js";
+import type { JiraClient, OkrProgress } from "@jira-dashboard/core";
 
 export const getOkrProgressInputSchema = {
   jql: z.string().describe(

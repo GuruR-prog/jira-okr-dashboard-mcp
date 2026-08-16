@@ -1,15 +1,18 @@
-// Exercises the real, shipped JiraClient (../src/jira/client.ts) against
+// Exercises the real, shipped JiraClient (packages/core) against
 // mock-jira-server.mjs — lets you see the actual tool logic run correctly
 // without a live Jira instance or an Anthropic key. Prints raw tool output
 // for search_issues / get_issue / get_okr_progress, including the
 // points-vs-count fallback behavior.
-import { JiraClient } from "../src/jira/client.js";
+import { JiraClient } from "@jira-dashboard/core";
 
-const jira = new JiraClient({
-  baseUrl: `http://localhost:${process.env.MOCK_JIRA_PORT || 4567}`,
-  email: "demo@example.com",
-  apiToken: "unused-by-the-mock-server",
-});
+const jira = new JiraClient(
+  {
+    baseUrl: `http://localhost:${process.env.MOCK_JIRA_PORT || 4567}`,
+    email: "demo@example.com",
+    apiToken: "unused-by-the-mock-server",
+  },
+  { storyPointsField: "customfield_10016" },
+);
 
 console.log("\n=== search_issues ===");
 const search = await jira.searchIssues('labels = "OKR-Q3-2026-reliability"');

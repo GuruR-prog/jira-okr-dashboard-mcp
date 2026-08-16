@@ -1,0 +1,33 @@
+[
+  {
+    "id": "team1-platform",
+    "label": "Team 1 — Platform Engineering",
+    "team": "Team 1",
+    "baseUrl": "http://localhost:4567",
+    "email": "demo@example.com",
+    "apiTokenEnvVar": "MOCK_JIRA_TOKEN",
+    "storyPointsField": "customfield_10016",
+    "etaField": "customfield_10050",
+    "jql": "labels = \"project-ecommerce\" ORDER BY updated DESC"
+  },
+  {
+    "id": "team2-checkout",
+    "label": "Team 2 — Checkout & Payments",
+    "team": "Team 2",
+    "baseUrl": "http://localhost:4568",
+    "email": "demo@example.com",
+    "apiTokenEnvVar": "MOCK_JIRA_TOKEN",
+    "storyPointsField": "customfield_10016",
+    "jql": "labels = \"project-ecommerce\" ORDER BY updated DESC"
+  },
+  {
+    "id": "team3-security",
+    "label": "Team 3 — Security Engineering",
+    "team": "Team 3",
+    "baseUrl": "http://localhost:4569",
+    "email": "demo@example.com",
+    "apiTokenEnvVar": "MOCK_JIRA_TOKEN",
+    "storyPointsField": "customfield_10016",
+    "jql": "labels = \"project-security\" ORDER BY updated DESC"
+  }
+]

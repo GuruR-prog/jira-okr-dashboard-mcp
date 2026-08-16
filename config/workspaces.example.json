@@ -1,0 +1,32 @@
+[
+  {
+    "id": "team1-platform",
+    "label": "Team 1 — Platform Engineering",
+    "team": "Team 1",
+    "baseUrl": "https://your-team.atlassian.net",
+    "email": "you@example.com",
+    "apiTokenEnvVar": "JIRA_TEAM1_API_TOKEN",
+    "storyPointsField": "customfield_10016",
+    "etaField": "customfield_10050",
+    "jql": "project = PLAT AND resolution = Unresolved ORDER BY updated DESC"
+  },
+  {
+    "id": "team2-checkout",
+    "label": "Team 2 — Checkout & Payments",
+    "team": "Team 2",
+    "baseUrl": "https://your-team.atlassian.net",
+    "email": "you@example.com",
+    "apiTokenEnvVar": "JIRA_TEAM2_API_TOKEN",
+    "storyPointsField": "customfield_10016",
+    "jql": "project = PAY AND resolution = Unresolved ORDER BY updated DESC"
+  },
+  {
+    "id": "team3-security",
+    "label": "Team 3 — Security Engineering (separate Jira site)",
+    "team": "Team 3",
+    "baseUrl": "https://your-other-team.atlassian.net",
+    "email": "you@example.com",
+    "apiTokenEnvVar": "JIRA_TEAM3_API_TOKEN",
+    "jql": "labels = \"project-security\" AND resolution = Unresolved ORDER BY updated DESC"
+  }
+]

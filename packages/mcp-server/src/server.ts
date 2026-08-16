@@ -2,7 +2,7 @@
 import "dotenv/config";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { JiraClient } from "./jira/client.js";
+import { JiraClient } from "@jira-dashboard/core";
 import { searchIssuesInputSchema, searchIssuesTool } from "./tools/searchIssues.js";
 import { getIssueInputSchema, getIssueTool } from "./tools/getIssue.js";
 import { getOkrProgressInputSchema, getOkrProgressTool } from "./tools/getOkrProgress.js";
@@ -23,7 +23,10 @@ const jira = new JiraClient(
     email: requireEnv("JIRA_EMAIL"),
     apiToken: requireEnv("JIRA_API_TOKEN"),
   },
-  process.env.JIRA_STORY_POINTS_FIELD,
+  {
+    storyPointsField: process.env.JIRA_STORY_POINTS_FIELD,
+    etaField: process.env.JIRA_ETA_FIELD,
+  },
 );
 
 const server = new McpServer({

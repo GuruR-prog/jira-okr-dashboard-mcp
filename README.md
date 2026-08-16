@@ -1,24 +1,83 @@
 # jira-okr-dashboard-mcp
 
-An MCP server that exposes Jira OKR/epic progress as tools, plus a small CLI
-that lets Claude use those tools to write an OKR status report and render it
-as a static dashboard.
+A Jira-over-MCP toolkit, built up in three stages:
 
-This is a clean-room, open-source rebuild of an internal tool I built at
-work — same idea (AI-generated OKR visibility over Jira via MCP), but every
-line here is new code written against my own test Jira instance, with no
-proprietary code, data, or credentials involved.
+1. **An MCP server** exposing Jira issues/progress as tools, for any MCP
+   client (Claude Desktop, Claude Code, ...).
+2. **A one-shot CLI** that drives Claude through those tools to write a
+   static OKR status report.
+3. **A live, multi-workspace web dashboard** — pull tickets from several
+   Jira sites/teams into one view, filter by team or project label,
+   comment on tickets without leaving the page, and get an AI-generated
+   status summary of whatever you're currently looking at.
 
-## Why MCP instead of a bespoke Jira integration
+This is a clean-room, open-source rebuild of internal tools I built at
+work — same ideas (AI-generated Jira visibility via MCP, Claude-assisted
+status reporting), but every line here is new code written against my own
+test Jira instance, with no proprietary code, data, or credentials
+involved.
 
-The tools in `src/tools/` don't know or care who's calling them. Point
-Claude Desktop or Claude Code at `src/server.ts` and you get the same three
-tools interactively, ask-a-question style, no dashboard needed. The CLI in
-`src/dashboard/generate.ts` is one more MCP client on top of that — useful
-when you want a static report to drop in Slack or a wiki page instead of a
-chat.
+## The web dashboard
 
-## What it does
+The headline feature. As an engineering leader with a few teams, each
+possibly living in a different Jira project or even a different Atlassian
+site, this answers "what's actually going on across all of it" in one
+screen — key, summary, assignee, due date, ETA, status, and the latest
+comment, tagged by team and project label, with a comment box and an
+AI summarize button.
+
+```bash
+npm install
+cp config/workspaces.example.json config/workspaces.json
+# edit config/workspaces.json — one entry per Jira site/team
+cp .env.example .env
+# fill in one JIRA_<NAME>_API_TOKEN per workspace, plus ANTHROPIC_API_KEY
+
+npm run web-server    # terminal 1 — API on :4000
+npm run web-client    # terminal 2 — UI on :5173
+```
+
+Want to see it working before touching a real Jira account? See
+[`demo/README.md`](demo/README.md) — three fixture Jira servers, a
+ready-made `config/workspaces.demo.json`, and instructions to run the
+whole thing end to end against sample data (comment posting included).
+
+**How a workspace config works:** each entry in `config/workspaces.json`
+is one Jira site + a JQL scoping which issues belong on the dashboard,
+tagged with a `team` label for the UI. Multiple workspaces can point at
+the *same* Jira site (different projects, same team leader owning both)
+or genuinely different Atlassian sites — the aggregator doesn't care
+either way, it just fetches each one and tags the results:
+
+```json
+{
+  "id": "team1-platform",
+  "label": "Team 1 — Platform Engineering",
+  "team": "Team 1",
+  "baseUrl": "https://your-team.atlassian.net",
+  "email": "you@example.com",
+  "apiTokenEnvVar": "JIRA_TEAM1_API_TOKEN",
+  "storyPointsField": "customfield_10016",
+  "etaField": "customfield_10050",
+  "jql": "project = PLAT AND resolution = Unresolved ORDER BY updated DESC"
+}
+```
+
+Tokens are never stored in the config file itself — `apiTokenEnvVar` names
+an environment variable that holds the real secret, so the config is safe
+to share with your team or check into a private repo.
+
+One workspace being down or misconfigured doesn't blank the dashboard —
+see `Aggregator.fetchAllTickets` in `packages/web-server/src/aggregator.ts`:
+failures are isolated per workspace and surfaced as a banner, while every
+workspace that did respond still renders.
+
+## Why MCP for the server/CLI half
+
+The tools in `packages/mcp-server/src/tools/` don't know or care who's
+calling them. Point Claude Desktop or Claude Code at
+`packages/mcp-server/src/server.ts` and you get the same three tools
+interactively, ask-a-question style, no dashboard needed:
 
 - **`search_issues`** — run a JQL query, get back normalized issue summaries
 - **`get_issue`** — fetch one issue by key
@@ -26,78 +85,60 @@ chat.
   and compute completion by issue count, and by story points when every
   matched issue is estimated
 
-The dashboard CLI spawns the server, hands Claude those three tools, and
-lets it investigate on its own — pull progress, look at specific issues if
-something looks off — before writing a short status report. That report
-gets wrapped in a static `dashboard.html`.
-
-## Setup
+`packages/dashboard-cli` is one more MCP client on top of that — useful
+when you want a single static report to drop in Slack or a wiki page,
+generated by an agentic loop where Claude decides which tools to call and
+when it has enough to write the report:
 
 ```bash
-npm install
 cp .env.example .env
-# fill in JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN
+# fill in JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN, ANTHROPIC_API_KEY, OKR_JQL
+npm run mcp-server   # for Claude Desktop/Code — see examples/claude_desktop_config.json
+npm run dashboard     # one-shot: writes ./dashboard.html
 ```
 
-Get a Jira API token at
-[id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens).
-
-Don't have a Jira instance handy, or just want to try it first? See
-[`demo/`](demo/) for a fixture server that lets you run everything —
-including the full Claude-driven dashboard — against sample data.
-
-Story points live in a custom field whose ID varies per Jira instance/plan —
-`JIRA_STORY_POINTS_FIELD` defaults to `customfield_10016` (the common Jira
-Cloud default). Find yours via `GET /rest/api/3/field` if progress-by-points
-comes back `null` for issues you know are estimated.
-
-### Run the MCP server directly (Claude Desktop / Claude Code)
-
-```bash
-npm run server
-```
-
-Or point an MCP client config at it — see
-[`examples/claude_desktop_config.json`](examples/claude_desktop_config.json).
-
-### Generate a static dashboard
-
-```bash
-# also needs ANTHROPIC_API_KEY and OKR_JQL in .env
-npm run dashboard
-```
-
-This spawns the server, connects an MCP client, and runs an agentic loop:
-Claude calls tools until it has enough to write the report, then the script
-renders `dashboard.html` and exits. Watch stderr to see which tools it
-called and why.
+Story points and ETA live in custom fields whose IDs vary per Jira
+instance/plan — `JIRA_STORY_POINTS_FIELD` / `JIRA_ETA_FIELD` (single-
+workspace) or each workspace's `storyPointsField`/`etaField`
+(multi-workspace) let you point at the right one. Find yours via
+`GET /rest/api/3/field` if a value you know is set keeps coming back null.
 
 ## Project layout
 
 ```
-src/
-  server.ts              MCP server entrypoint (stdio transport)
-  jira/
-    client.ts             Minimal Jira Cloud REST API client (native fetch)
-    types.ts
-  tools/
-    searchIssues.ts
-    getIssue.ts
-    getOkrProgress.ts
-  dashboard/
-    generate.ts            CLI: MCP client + Claude tool-use loop
-    template.ts            Static HTML report shell
+packages/
+  core/                       Shared JiraClient, types, workspace config loader — everything else depends on this
+    src/jira-client.ts         Jira Cloud REST client (native fetch, no deps)
+    src/workspaces.ts          Multi-workspace config loading + validation
+    src/adf.ts                 Atlassian Document Format <-> plain text (comments)
+  mcp-server/                 MCP server: search_issues, get_issue, get_okr_progress
+  dashboard-cli/               One-shot CLI: MCP client + Claude tool-use loop -> static dashboard.html
+  web-server/                  Express API: multi-workspace aggregation, comment posting, AI summarize
+    src/aggregator.ts           Parallel fetch across workspaces with per-workspace error isolation
+    src/routes/                 tickets.ts, comments.ts, summarize.ts
+  web-client/                  React + Vite dashboard UI
 demo/
-  mock-jira-server.mjs      Fixture Jira server — try everything without a real Jira account
-  try-tools.ts               Exercises search_issues / get_issue / get_okr_progress directly
+  mock-jira-server.mjs         Three fixture Jira sites (ports 4567-4569) — see demo/README.md
+  workspaces.demo.json          Points config at the fixture servers
+  try-tools.ts                  Exercises the MCP tools directly, no UI
+config/
+  workspaces.example.json       Template — copy to workspaces.json (gitignored) for your real teams
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) — setup, conventions, and what to
+run before opening a PR. CI (`.github/workflows/ci.yml`) typechecks and
+builds every package on each PR.
 
 ## Roadmap
 
-- [ ] Tests around `getOkrProgress`'s points-vs-count logic
-- [ ] OAuth 2.0 (3LO) as an alternative to API tokens
-- [ ] A `--jql-file` option for tracking a list of OKRs in one run
-- [ ] Publish the server as an installable MCP package
+- [ ] Tests around `getOkrProgress`'s points-vs-count logic and the diff/ADF helpers
+- [ ] OAuth 2.0 (3LO) as an alternative to Jira API tokens
+- [ ] Support object-typed ETA custom fields (e.g. a select list), not just string/date fields
+- [ ] Persist the web dashboard's workspace fetch results (currently in-memory, refetched per request)
+- [ ] Markdown rendering for the summarize panel instead of preformatted text
+- [ ] Publish the MCP server as an installable package
 
 ## License
 

@@ -2,12 +2,13 @@
   "mcpServers": {
     "jira-okr-dashboard": {
       "command": "npx",
-      "args": ["tsx", "/absolute/path/to/jira-okr-dashboard-mcp/src/server.ts"],
+      "args": ["tsx", "/absolute/path/to/jira-okr-dashboard-mcp/packages/mcp-server/src/server.ts"],
       "env": {
         "JIRA_BASE_URL": "https://your-team.atlassian.net",
         "JIRA_EMAIL": "you@example.com",
         "JIRA_API_TOKEN": "your-api-token",
-        "JIRA_STORY_POINTS_FIELD": "customfield_10016"
+        "JIRA_STORY_POINTS_FIELD": "customfield_10016",
+        "JIRA_ETA_FIELD": ""
       }
     }
   }

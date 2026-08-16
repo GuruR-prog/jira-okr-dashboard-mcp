@@ -45,9 +45,11 @@ for (const [key, value] of Object.entries(process.env)) {
   if (value !== undefined) childEnv[key] = value;
 }
 
+const mcpServerEntry = path.join(__dirname, "../../mcp-server/src/server.ts");
+
 const transport = new StdioClientTransport({
   command: "npx",
-  args: ["tsx", path.join(__dirname, "../server.ts")],
+  args: ["tsx", mcpServerEntry],
   env: childEnv,
 });
 

@@ -1,32 +1,28 @@
 {
   "name": "jira-okr-dashboard-mcp",
-  "version": "0.1.0",
-  "description": "MCP server that exposes Jira OKR/epic progress as tools, plus a CLI that drives Claude through those tools to generate a leadership-ready OKR status dashboard.",
-  "license": "MIT",
+  "version": "0.2.0",
+  "private": true,
   "type": "module",
+  "description": "A Jira-over-MCP toolkit: an MCP server for Claude, a one-shot OKR dashboard CLI, and a live multi-workspace team dashboard.",
+  "license": "MIT",
   "author": "Guru Raghavendra",
   "repository": {
     "type": "git",
     "url": "https://github.com/GuruR-prog/jira-okr-dashboard-mcp.git"
   },
-  "bin": {
-    "jira-okr-mcp-server": "./dist/server.js"
-  },
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "server": "tsx src/server.ts",
-    "dashboard": "tsx src/dashboard/generate.ts",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.117.1",
-    "@modelcontextprotocol/sdk": "^1.30.0",
-    "dotenv": "^16.4.5",
-    "zod": "^3.23.8"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "mcp-server": "npm run start --workspace packages/mcp-server",
+    "dashboard": "npm run start --workspace packages/dashboard-cli",
+    "web-server": "npm run dev --workspace packages/web-server",
+    "web-client": "npm run dev --workspace packages/web-client"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
-    "tsx": "^4.23.12",
     "typescript": "^7.0.2"
   },
   "engines": {

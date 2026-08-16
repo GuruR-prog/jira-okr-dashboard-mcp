@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { JiraClient } from "../jira/client.js";
+import type { JiraClient } from "@jira-dashboard/core";
 
 export const searchIssuesInputSchema = {
   jql: z.string().describe(

@@ -1,10 +1,43 @@
 # demo/
 
-Fixture Jira data so you can try this project without a real Jira account —
-useful for checking your setup works before pointing it at a real instance,
-or just for kicking the tires.
+Fixture Jira data so you can try this project without a real Jira account.
+`mock-jira-server.mjs` runs **three separate HTTP servers** (ports 4567,
+4568, 4569) simulating three separate Jira Cloud sites — Platform
+Engineering, Checkout & Payments, and Security Engineering — exactly how a
+real multi-workspace setup looks: different origins, different data, no
+shared state.
 
-## Try the tools directly (no Anthropic key needed)
+```bash
+node demo/mock-jira-server.mjs
+```
+
+## Try the web dashboard (the full experience)
+
+```bash
+# terminal 1
+node demo/mock-jira-server.mjs
+
+# terminal 2 — needs ANTHROPIC_API_KEY in your .env for the Summarize button
+MOCK_JIRA_TOKEN=unused \
+WORKSPACES_CONFIG_PATH="$(pwd)/demo/workspaces.demo.json" \
+npm run web-server
+
+# terminal 3
+npm run web-client
+```
+
+Open the client (Vite prints the URL, typically http://localhost:5173).
+You'll see all 13 fixture tickets across the three teams — filter by team
+or label, click **Comment** on a ticket to post one (it round-trips
+through the mock server's in-memory store), or click **Summarize &
+generate report** to see Claude produce a real status summary over
+whatever's currently filtered.
+
+`demo/workspaces.demo.json` is the workspace config pointing at the three
+mock ports — copy its shape for `config/workspaces.json` when you're ready
+to point at real Jira sites instead.
+
+## Try the low-level tools directly (no Anthropic key needed)
 
 ```bash
 # terminal 1
@@ -14,13 +47,13 @@ node demo/mock-jira-server.mjs
 npx tsx demo/try-tools.ts
 ```
 
-This runs `search_issues`, `get_issue`, and `get_okr_progress` against eight
-fixture issues on a mock "Q3 reliability OKR" and prints the raw output —
-including the points-vs-count fallback: one run has every issue estimated,
-the other strips estimates off two issues so you can see `percentByPoints`
-correctly come back `null` instead of a misleading partial average.
+Exercises `search_issues`, `get_issue`, and `get_okr_progress` against the
+Team 1 fixture data and prints the raw output — including the
+points-vs-count fallback: one run has every issue estimated, the other
+strips estimates off two issues so you can see `percentByPoints` correctly
+come back `null` instead of a misleading partial average.
 
-## Try the full Claude-driven dashboard
+## Try the full Claude-driven CLI dashboard (packages/dashboard-cli)
 
 ```bash
 # terminal 1
@@ -31,18 +64,24 @@ export ANTHROPIC_API_KEY="your-key-here"
 export JIRA_BASE_URL="http://localhost:4567"
 export JIRA_EMAIL="demo@example.com"
 export JIRA_API_TOKEN="unused-by-the-mock-server"
-export OKR_JQL='labels = "OKR-Q3-2026-reliability"'
+export OKR_JQL='labels = "project-ecommerce"'
 npm run dashboard
 ```
 
-Watch terminal 2's stderr — it prints every tool call Claude makes before it
-writes the report, so you can see it actually investigating the data rather
-than templating a response. Swap the `JIRA_*` values for a real instance
-and token whenever you're ready to move off fixtures.
+Watch terminal 2's stderr — it prints every tool call Claude makes before
+it writes the report, so you can see it actually investigating the data
+rather than templating a response.
 
-`demo/mock-jira-server.mjs` implements exactly one endpoint
-(`POST /rest/api/3/search`) with just enough JQL handling to make the fixture
-data useful: `key = "XXX"` filters to one issue, `maxResults` truncates, and
-any other query returns the full eight-issue set. It's a test fixture, not a
-Jira emulator — don't reach for it as a stand-in for the real API's query
-language.
+## What the mock server implements
+
+Two endpoints per port, matching the real Jira Cloud REST API (v3) just
+enough for this project's client to work against:
+
+- `POST /rest/api/3/search` — `key = "XXX"` filters to one issue,
+  `maxResults` truncates, anything else returns the full fixture set for
+  that port
+- `POST /rest/api/3/issue/:key/comment` — appends to that issue's
+  in-memory comment list (lost on restart)
+
+It's a test fixture, not a JQL engine or a persistent store — don't reach
+for it as a stand-in for the real API's query language or durability.

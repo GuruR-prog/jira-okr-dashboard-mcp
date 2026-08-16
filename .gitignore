@@ -1,6 +1,11 @@
 node_modules/
 dist/
+build/
 .env
 dashboard.html
 *.log
 .DS_Store
+
+# Real per-user workspace config — contains your org's Jira sites/JQL.
+# Copy config/workspaces.example.json to config/workspaces.json to set this up.
+config/workspaces.json
