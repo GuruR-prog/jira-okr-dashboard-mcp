@@ -17,6 +17,51 @@ status reporting), but every line here is new code written against my own
 test Jira instance, with no proprietary code, data, or credentials
 involved.
 
+## Architecture — how the pieces fit together
+
+Two independent tracks share one Jira client. **The web dashboard never
+talks to MCP at all** — despite the repo's name, MCP is only involved if
+you use the separate CLI/Claude-Desktop track.
+
+```mermaid
+flowchart TB
+    subgraph Web["Web Dashboard — packages/web-client + web-server"]
+        direction LR
+        UI["React UI<br/>(web-client)"]
+        API["Express API<br/>(web-server)"]
+        UI <-->|"REST: tickets, comments, summarize"| API
+    end
+
+    subgraph MCPTrack["MCP Track — packages/mcp-server + dashboard-cli (separate, optional)"]
+        direction LR
+        Desktop["Claude Desktop / Code"]
+        Srv["MCP Server<br/>(mcp-server)"]
+        CLI["Dashboard CLI<br/>(dashboard-cli)"]
+        Desktop -->|"MCP protocol"| Srv
+        CLI -->|"spawns + drives via MCP"| Srv
+    end
+
+    Jira[("Jira Cloud REST API<br/>(one or more workspaces)")]
+    Anthropic[("Anthropic API — Claude")]
+
+    API -->|"direct REST calls, no MCP"| Jira
+    Srv -->|"direct REST calls"| Jira
+    API -.->|"only when you click Summarize"| Anthropic
+    CLI -->|"tool-use loop"| Anthropic
+```
+
+- **Jira integration is always direct REST**, via the shared `JiraClient`
+  in `packages/core` — both tracks use it, neither goes through the other.
+- **An Anthropic API key is only needed for AI features specifically**:
+  the web dashboard's Summarize button, or the CLI (which can't function
+  without one, since writing the report *is* the CLI's job). Viewing
+  tickets, filtering, and posting comments in the web dashboard need
+  nothing but Jira credentials — zero LLM calls.
+- **The MCP server is a separate, optional way to reach the same Jira
+  data** from Claude Desktop or Claude Code, for people who want to ask
+  Jira questions in a chat instead of a dashboard. Nothing in the web
+  dashboard depends on it running.
+
 ## The web dashboard
 
 The headline feature. As an engineering leader with a few teams, each
