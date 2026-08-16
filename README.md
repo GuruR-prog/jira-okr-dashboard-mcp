@@ -42,6 +42,10 @@ cp .env.example .env
 Get a Jira API token at
 [id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens).
 
+Don't have a Jira instance handy, or just want to try it first? See
+[`demo/`](demo/) for a fixture server that lets you run everything —
+including the full Claude-driven dashboard — against sample data.
+
 Story points live in a custom field whose ID varies per Jira instance/plan —
 `JIRA_STORY_POINTS_FIELD` defaults to `customfield_10016` (the common Jira
 Cloud default). Find yours via `GET /rest/api/3/field` if progress-by-points
@@ -83,6 +87,9 @@ src/
   dashboard/
     generate.ts            CLI: MCP client + Claude tool-use loop
     template.ts            Static HTML report shell
+demo/
+  mock-jira-server.mjs      Fixture Jira server — try everything without a real Jira account
+  try-tools.ts               Exercises search_issues / get_issue / get_okr_progress directly
 ```
 
 ## Roadmap
