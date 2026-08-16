@@ -127,6 +127,33 @@ workspace that did respond still renders.
 
 ## Why MCP for the server/CLI half
 
+MCP servers are often thought of as "an abstraction layer over a service"
+— Jira, Slack, GitHub, whatever. More precisely, an MCP server abstracts
+*the shape of the interaction*, not the service itself. Every backend has
+its own bespoke way of doing things — REST vs GraphQL, its own auth
+scheme, Jira's specific JQL syntax and comment format (Atlassian Document
+Format, not plain text). Without MCP, an AI client needs custom code for
+every single one. MCP standardizes the outer interface — list tools, call
+a tool, get a structured result — so the client only has to speak that
+once, and any compliant server plugs in the same way underneath.
+
+In this project, that server sits above exactly one thing — **Jira**,
+via our own `JiraClient` — not a multi-service gateway abstracting Jira
+*and* Slack *and* GitHub behind one endpoint:
+
+```mermaid
+flowchart LR
+    Claude["Claude<br/>(or any MCP client)"] -->|"MCP protocol"| Server["MCP Server<br/>(packages/mcp-server)"]
+    Server -->|"calls"| Client["JiraClient<br/>(packages/core)<br/>auth, JQL, ADF encoding"]
+    Client -->|"REST API v3"| Jira[("Jira Cloud")]
+```
+
+That's the more common MCP pattern, and the one this repo follows: small,
+single-purpose servers rather than one server that knows about
+everything. Want Slack or GitHub too? That's a separate MCP server each,
+not more code added to this one — an MCP client like Claude Desktop just
+connects to several of them at once.
+
 The tools in `packages/mcp-server/src/tools/` don't know or care who's
 calling them. Point Claude Desktop or Claude Code at
 `packages/mcp-server/src/server.ts` and you get the same three tools
