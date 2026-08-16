@@ -19,9 +19,17 @@ involved.
 
 ## Architecture — how the pieces fit together
 
-Two independent tracks share one Jira client. **The web dashboard never
-talks to MCP at all** — despite the repo's name, MCP is only involved if
-you use the separate CLI/Claude-Desktop track.
+Two tracks, one shared Jira brain underneath:
+
+- **Visual track** (web dashboard) — you look at a table, filter it, click around.
+- **Conversational track** (MCP) — you ask Claude a question and it goes and
+  checks Jira for you, live in chat (or as a one-shot script for the CLI
+  variant).
+
+Both just call the same `JiraClient` in `packages/core` — they only differ
+in how they present it, depending on whether you'd rather look or ask.
+**The web dashboard never talks to MCP at all** — despite the repo's name,
+MCP is only involved if you use the separate CLI/Claude-Desktop track.
 
 ```mermaid
 flowchart TB
