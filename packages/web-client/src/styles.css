@@ -430,3 +430,147 @@ body {
   gap: 0.5rem;
   margin-top: 1rem;
 }
+
+/* ---------- sprint pills (table cell) ---------- */
+.pill-kanban {
+  background: var(--todo-bg);
+  color: var(--ink-faint);
+  font-style: italic;
+}
+.pill-sprint {
+  font-weight: 600;
+}
+.pill-sprint-active {
+  background: var(--progress-bg);
+  color: var(--progress-ink);
+}
+.pill-sprint-future {
+  background: var(--todo-bg);
+  color: var(--todo-ink);
+}
+.pill-sprint-closed {
+  background: var(--done-bg);
+  color: var(--done-ink);
+}
+
+/* ---------- sprint health panel ---------- */
+.sprint-health {
+  margin-bottom: 1.2rem;
+}
+.sprint-health-title {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-faint);
+  margin: 0 0 0.5rem;
+}
+.sprint-health-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.8rem;
+}
+.sprint-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+}
+.sprint-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+.sprint-card-name {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+.sprint-projection {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-radius: 4px;
+  padding: 0.2em 0.55em;
+  white-space: nowrap;
+}
+.sprint-projection-on-track,
+.sprint-projection-completed {
+  background: var(--success-bg);
+  color: var(--success);
+}
+.sprint-projection-at-risk {
+  background: var(--warning-bg);
+  color: #8a6100;
+}
+.sprint-projection-will-miss,
+.sprint-projection-incomplete {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+.sprint-projection-not-started,
+.sprint-projection-unknown {
+  background: var(--todo-bg);
+  color: var(--ink-faint);
+}
+.sprint-card-teams {
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  margin-top: 0.15rem;
+}
+.sprint-card-goal {
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  font-style: italic;
+  margin-top: 0.4rem;
+}
+.sprint-card-stats {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  margin-top: 0.6rem;
+}
+.sprint-progress-bars {
+  margin-top: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.sprint-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.sprint-bar-label {
+  width: 2.6rem;
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+  flex: none;
+}
+.sprint-bar-track {
+  flex: 1;
+  height: 6px;
+  background: var(--bg);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.sprint-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 99px;
+}
+.sprint-bar-fill-time {
+  background: var(--ink-faint);
+}
+.sprint-bar-value {
+  width: 2.4rem;
+  text-align: right;
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+.sprint-card-footer {
+  margin-top: 0.6rem;
+  font-size: 0.76rem;
+  color: var(--ink-faint);
+}

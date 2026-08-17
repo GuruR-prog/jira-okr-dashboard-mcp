@@ -125,6 +125,42 @@ see `Aggregator.fetchAllTickets` in `packages/web-server/src/aggregator.ts`:
 failures are isolated per workspace and surfaced as a banner, while every
 workspace that did respond still renders.
 
+### Sprint & Kanban awareness
+
+Not every team works the same way — some run Scrum sprints, some run
+Kanban, and a real dashboard has to represent both honestly instead of
+forcing everything into one shape. Set `sprintField` on a workspace and
+its tickets carry real sprint data (name, dates, goal); leave it unset
+and that workspace's tickets correctly show **Kanban** instead of a
+missing value — that's the deliberate signal for "this team doesn't use
+sprints," not an error.
+
+For every active/future sprint present in the current data, a **Sprint
+health** panel answers the actual question a team lead has — *is this
+sprint going to finish on time* — using a plain pace heuristic: progress
+so far vs. time elapsed so far.
+
+```
+percent done (by points, or by issue count as fallback)
+  vs.
+percent of the sprint's time that's already elapsed
+```
+
+| Projection | Meaning |
+|---|---|
+| **On track** | Progress is keeping pace with time elapsed |
+| **At risk** | Progress is lagging time elapsed by more than 15 points |
+| **Will miss** | Past the sprint's own end date, still not done |
+| **Completed** / **Incomplete** | Sprint is closed — did it finish everything or not |
+
+This is deliberately a pace heuristic, not a velocity model trained on
+sprint history — it's meant to answer "does this look OK at a glance,"
+not produce a precise ETA. See `computeSprintProgress` in
+[`packages/core/src/sprint-progress.ts`](packages/core/src/sprint-progress.ts)
+for the exact math, and the demo's `SPRINT_12` / `SPRINT_8` fixtures in
+[`demo/mock-jira-server.mjs`](demo/mock-jira-server.mjs) for a live
+example of one at-risk and one on-track sprint side by side.
+
 ## Why MCP for the server/CLI half
 
 MCP servers are often thought of as "an abstraction layer over a service"
@@ -191,12 +227,14 @@ packages/
     src/jira-client.ts         Jira Cloud REST client (native fetch, no deps)
     src/workspaces.ts          Multi-workspace config loading + validation
     src/adf.ts                 Atlassian Document Format <-> plain text (comments)
+    src/sprint-progress.ts      Groups tickets by sprint, computes the on-track/at-risk/will-miss projection
   mcp-server/                 MCP server: search_issues, get_issue, get_okr_progress
   dashboard-cli/               One-shot CLI: MCP client + Claude tool-use loop -> static dashboard.html
   web-server/                  Express API: multi-workspace aggregation, comment posting, AI summarize
     src/aggregator.ts           Parallel fetch across workspaces with per-workspace error isolation
     src/routes/                 tickets.ts, comments.ts, summarize.ts
   web-client/                  React + Vite dashboard UI
+    src/components/SprintHealth.tsx  On-track/at-risk/will-miss cards for active + future sprints
 demo/
   mock-jira-server.mjs         Three fixture Jira sites (ports 4567-4569) — see demo/README.md
   workspaces.demo.json          Points config at the fixture servers
@@ -213,9 +251,11 @@ builds every package on each PR.
 
 ## Roadmap
 
-- [ ] Tests around `getOkrProgress`'s points-vs-count logic and the diff/ADF helpers
+- [ ] On-call rotation + incident visibility — pluggable incident source (PagerDuty first, VictorOps/Opsgenie next), Sev-1/2/2.5 surfaced on the dashboard, Sev-3-and-below in a separate view
+- [ ] Tests around `getOkrProgress`/`computeSprintProgress`'s points-vs-count logic and the diff/ADF helpers
 - [ ] OAuth 2.0 (3LO) as an alternative to Jira API tokens
 - [ ] Support object-typed ETA custom fields (e.g. a select list), not just string/date fields
+- [ ] Velocity-based sprint forecasting using historical sprint data, as an alternative to the current pace heuristic
 - [ ] Persist the web dashboard's workspace fetch results (currently in-memory, refetched per request)
 - [ ] Markdown rendering for the summarize panel instead of preformatted text
 - [ ] Publish the MCP server as an installable package

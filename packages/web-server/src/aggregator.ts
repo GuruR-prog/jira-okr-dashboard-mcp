@@ -1,5 +1,6 @@
 import {
   JiraClient,
+  computeSprintProgress,
   loadWorkspaces,
   resolveApiToken,
   type AggregatedTickets,
@@ -27,7 +28,7 @@ export class Aggregator {
       const apiToken = resolveApiToken(config);
       const client = new JiraClient(
         { baseUrl: config.baseUrl, email: config.email, apiToken },
-        { storyPointsField: config.storyPointsField, etaField: config.etaField },
+        { storyPointsField: config.storyPointsField, etaField: config.etaField, sprintField: config.sprintField },
       );
       this.entries.set(config.id, { config, client });
     }
@@ -75,7 +76,7 @@ export class Aggregator {
       }
     });
 
-    return { tickets, errors, fetchedAt: new Date().toISOString() };
+    return { tickets, errors, sprints: computeSprintProgress(tickets), fetchedAt: new Date().toISOString() };
   }
 }
 

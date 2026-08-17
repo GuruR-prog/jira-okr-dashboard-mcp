@@ -26,6 +26,7 @@ const jira = new JiraClient(
   {
     storyPointsField: process.env.JIRA_STORY_POINTS_FIELD,
     etaField: process.env.JIRA_ETA_FIELD,
+    sprintField: process.env.JIRA_SPRINT_FIELD,
   },
 );
 

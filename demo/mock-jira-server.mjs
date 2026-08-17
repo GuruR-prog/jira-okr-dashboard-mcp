@@ -20,7 +20,11 @@ function comment(author, text, created) {
   return { author: { displayName: author }, body: adf(text), created };
 }
 
-function issue(key, summary, statusName, categoryKey, assignee, points, duedate, labels, comments, eta) {
+function sprint(id, name, state, startDate, endDate, goal) {
+  return { id, name, self: `http://localhost/rest/agile/1.0/sprint/${id}`, state, startDate, endDate, goal };
+}
+
+function issue(key, summary, statusName, categoryKey, assignee, points, duedate, labels, comments, eta, sprintObj) {
   return {
     key,
     fields: {
@@ -33,32 +37,47 @@ function issue(key, summary, statusName, categoryKey, assignee, points, duedate,
       labels,
       customfield_10016: points,
       customfield_10050: eta ?? null,
+      // Real Jira returns an array here (an issue can carry sprint history) —
+      // see JiraClient.parseSprintField for why we always send an array.
+      customfield_10020: sprintObj ? [sprintObj] : [],
       comment: { comments },
     },
   };
 }
 
+// Team 1 is mid-sprint and behind pace on purpose — 52% done by points at
+// ~86% of the sprint's time elapsed — so the dashboard's "at-risk"
+// projection has something real to demonstrate.
+const SPRINT_12 = sprint(12, "Sprint 12", "active", "2026-08-04T00:00:00.000Z", "2026-08-18T00:00:00.000Z", "Ship reliability hardening for Q3");
+
+// Team 2's sprint just started — low points-done is expected this early,
+// so it should read "on-track" rather than "at-risk".
+const SPRINT_8 = sprint(8, "Sprint 8", "active", "2026-08-14T00:00:00.000Z", "2026-08-28T00:00:00.000Z", "Ship Apple Pay + close out PCI follow-ups");
+
 const DATASETS = {
   4567: {
     team: "Team 1 — Platform Engineering",
     issues: [
-      issue("PLAT-201", "Add multi-region failover for checkout", "Done", "done", "Priya N.", 8, "2026-07-15", ["project-ecommerce", "reliability"], [comment("Priya N.", "Failover tested in staging, looks solid.", "2026-08-12T09:00:00.000Z")], "2026-07-20"),
-      issue("PLAT-202", "Migrate on-call runbooks to auto-generated docs", "In Progress", "indeterminate", "Wei L.", 5, "2026-08-25", ["project-ecommerce", "docs"], [comment("Wei L.", "Half the runbooks converted, on track.", "2026-08-13T15:30:00.000Z")], "2026-08-30"),
-      issue("PLAT-203", "Reduce cold-start latency on the events consumer", "To Do", "new", null, 2, null, ["project-ecommerce", "performance"], [], null),
-      issue("PLAT-204", "Chaos test the payment service", "Blocked", "indeterminate", "Priya N.", 3, "2026-08-10", ["project-ecommerce", "reliability"], [comment("Priya N.", "Blocked on shared staging environment access.", "2026-08-11T11:20:00.000Z")], null),
-      issue("PLAT-205", "Define SLOs for fulfillment-routing service", "Done", "done", "Marcus T.", 3, "2026-07-01", ["project-ecommerce"], [comment("Marcus T.", "SLOs published, dashboards live.", "2026-07-02T08:00:00.000Z")], "2026-07-05"),
+      issue("PLAT-201", "Add multi-region failover for checkout", "Done", "done", "Priya N.", 8, "2026-07-15", ["project-ecommerce", "reliability"], [comment("Priya N.", "Failover tested in staging, looks solid.", "2026-08-12T09:00:00.000Z")], "2026-07-20", SPRINT_12),
+      issue("PLAT-202", "Migrate on-call runbooks to auto-generated docs", "In Progress", "indeterminate", "Wei L.", 5, "2026-08-25", ["project-ecommerce", "docs"], [comment("Wei L.", "Half the runbooks converted, on track.", "2026-08-13T15:30:00.000Z")], "2026-08-30", SPRINT_12),
+      issue("PLAT-203", "Reduce cold-start latency on the events consumer", "To Do", "new", null, 2, null, ["project-ecommerce", "performance"], [], null, SPRINT_12),
+      issue("PLAT-204", "Chaos test the payment service", "Blocked", "indeterminate", "Priya N.", 3, "2026-08-10", ["project-ecommerce", "reliability"], [comment("Priya N.", "Blocked on shared staging environment access.", "2026-08-11T11:20:00.000Z")], null, SPRINT_12),
+      issue("PLAT-205", "Define SLOs for fulfillment-routing service", "Done", "done", "Marcus T.", 3, "2026-07-01", ["project-ecommerce"], [comment("Marcus T.", "SLOs published, dashboards live.", "2026-07-02T08:00:00.000Z")], "2026-07-05", SPRINT_12),
     ],
   },
   4568: {
     team: "Team 2 — Checkout & Payments",
     issues: [
-      issue("PAY-301", "Add idempotency keys to payment capture", "In Progress", "indeterminate", "Sam R.", 8, "2026-08-20", ["project-ecommerce", "payments"], [comment("Sam R.", "Design reviewed, implementation started.", "2026-08-14T13:00:00.000Z")]),
-      issue("PAY-302", "Fix double-charge race condition on retry", "Done", "done", "Sam R.", 5, "2026-08-01", ["project-ecommerce", "payments", "bug"], [comment("Sam R.", "Fixed and verified in prod.", "2026-08-02T10:00:00.000Z")]),
-      issue("PAY-303", "PCI compliance audit follow-ups", "To Do", "new", null, 5, "2026-09-01", ["project-ecommerce", "payments", "compliance"], []),
-      issue("PAY-304", "Add Apple Pay support", "Blocked", "indeterminate", "Jordan K.", 8, "2026-08-05", ["project-ecommerce", "payments"], [comment("Jordan K.", "Blocked on vendor certificate renewal.", "2026-08-09T16:45:00.000Z")]),
+      issue("PAY-301", "Add idempotency keys to payment capture", "In Progress", "indeterminate", "Sam R.", 8, "2026-08-20", ["project-ecommerce", "payments"], [comment("Sam R.", "Design reviewed, implementation started.", "2026-08-14T13:00:00.000Z")], null, SPRINT_8),
+      issue("PAY-302", "Fix double-charge race condition on retry", "Done", "done", "Sam R.", 5, "2026-08-01", ["project-ecommerce", "payments", "bug"], [comment("Sam R.", "Fixed and verified in prod.", "2026-08-02T10:00:00.000Z")], null, SPRINT_8),
+      issue("PAY-303", "PCI compliance audit follow-ups", "To Do", "new", null, 5, "2026-09-01", ["project-ecommerce", "payments", "compliance"], [], null, SPRINT_8),
+      issue("PAY-304", "Add Apple Pay support", "Blocked", "indeterminate", "Jordan K.", 8, "2026-08-05", ["project-ecommerce", "payments"], [comment("Jordan K.", "Blocked on vendor certificate renewal.", "2026-08-09T16:45:00.000Z")], null, SPRINT_8),
     ],
   },
   4569: {
+    // Kanban board — deliberately no sprint data at all, and
+    // workspaces.demo.json omits sprintField for this workspace, so these
+    // issues report sprint: null end to end, same as a real Kanban team.
     team: "Team 3 — Security Engineering",
     issues: [
       issue("SEC-401", "Rotate all service-to-service credentials", "In Progress", "indeterminate", "Alex F.", 5, "2026-08-22", ["project-security"], [comment("Alex F.", "60% rotated, on schedule.", "2026-08-14T09:10:00.000Z")]),

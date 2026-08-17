@@ -9,12 +9,34 @@ export interface JiraClientOptions {
   storyPointsField?: string;
   /** Custom field ID for an ETA/target-date field — varies per team. */
   etaField?: string;
+  /**
+   * Custom field ID for the Sprint field — varies per Jira instance/plan
+   * (commonly customfield_10020 on Jira Cloud, but not guaranteed). Omit
+   * entirely for boards that don't use Scrum sprints (pure Kanban) — every
+   * issue from that workspace will just report `sprint: null`, which the UI
+   * renders as "Kanban" rather than a missing value.
+   */
+  sprintField?: string;
 }
 
 export interface LatestComment {
   author: string;
   body: string;
   created: string;
+}
+
+/**
+ * A Scrum sprint an issue currently belongs to. Kanban boards don't have
+ * these at all — `Ticket.sprint` is `null` for issues from a Kanban-only
+ * workspace, not an empty/error state.
+ */
+export interface SprintInfo {
+  id: number;
+  name: string;
+  state: "active" | "future" | "closed";
+  startDate: string | null;
+  endDate: string | null;
+  goal: string | null;
 }
 
 export interface JiraIssueSummary {
@@ -33,6 +55,8 @@ export interface JiraIssueSummary {
   /** Only populated when the caller asks for it — costs an extra field on the Jira side. */
   latestComment: LatestComment | null;
   updated: string;
+  /** null for Kanban boards, or Scrum boards where sprintField isn't configured. */
+  sprint: SprintInfo | null;
 }
 
 export interface JiraSearchResult {
@@ -74,6 +98,8 @@ export interface WorkspaceConfig {
   apiTokenEnvVar: string;
   storyPointsField?: string;
   etaField?: string;
+  /** Omit for Kanban-only workspaces — see JiraClientOptions.sprintField. */
+  sprintField?: string;
   /** JQL scoping which issues from this workspace belong on the dashboard. */
   jql: string;
 }
@@ -93,5 +119,43 @@ export interface WorkspaceFetchError {
 export interface AggregatedTickets {
   tickets: Ticket[];
   errors: WorkspaceFetchError[];
+  /** One entry per distinct active/future/closed sprint found across all tickets. */
+  sprints: SprintProgress[];
   fetchedAt: string;
+}
+
+/**
+ * Where a sprint stands against its own deadline, and this project's read
+ * on whether it'll actually finish. This is a pace heuristic — progress
+ * so far vs. time elapsed so far — not a statistical burndown model or a
+ * velocity forecast off historical sprints. It's meant to answer "does
+ * this look OK at a glance," not to be a precise ETA. See
+ * `computeSprintProgress` in sprint-progress.ts for the exact math.
+ */
+export type SprintProjection =
+  | "on-track"
+  | "at-risk"
+  | "will-miss"
+  | "completed"
+  | "incomplete"
+  | "not-started"
+  | "unknown";
+
+export interface SprintProgress {
+  sprintId: number;
+  sprintName: string;
+  /** Team(s) whose tickets landed in this sprint — usually one, but not enforced. */
+  teams: string[];
+  state: SprintInfo["state"];
+  startDate: string | null;
+  endDate: string | null;
+  goal: string | null;
+  totalIssues: number;
+  doneIssues: number;
+  percentByCount: number;
+  percentByPoints: number | null;
+  /** Null when the sprint has no end date to measure against. */
+  percentTimeElapsed: number | null;
+  daysRemaining: number | null;
+  projection: SprintProjection;
 }

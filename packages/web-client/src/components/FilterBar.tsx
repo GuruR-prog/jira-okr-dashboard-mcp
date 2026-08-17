@@ -12,14 +12,19 @@ const STATUS_OPTIONS: { value: StatusCategory; label: string }[] = [
 interface FilterBarProps {
   teams: string[];
   labels: string[];
+  sprints: string[];
   selectedTeams: Set<string>;
   selectedLabels: Set<string>;
   selectedStatuses: Set<StatusCategory>;
+  selectedSprints: Set<string>;
   overdueOnly: boolean;
+  kanbanOnly: boolean;
   onToggleTeam: (team: string) => void;
   onToggleLabel: (label: string) => void;
   onToggleStatus: (status: StatusCategory) => void;
+  onToggleSprint: (sprint: string) => void;
   onToggleOverdue: () => void;
+  onToggleKanbanOnly: () => void;
   onClear: () => void;
   hasActiveFilters: boolean;
 }
@@ -27,14 +32,19 @@ interface FilterBarProps {
 export function FilterBar({
   teams,
   labels,
+  sprints,
   selectedTeams,
   selectedLabels,
   selectedStatuses,
+  selectedSprints,
   overdueOnly,
+  kanbanOnly,
   onToggleTeam,
   onToggleLabel,
   onToggleStatus,
+  onToggleSprint,
   onToggleOverdue,
+  onToggleKanbanOnly,
   onClear,
   hasActiveFilters,
 }: FilterBarProps) {
@@ -55,6 +65,19 @@ export function FilterBar({
           </Chip>
         ))}
       </FilterGroup>
+
+      {(sprints.length > 0 || kanbanOnly) && (
+        <FilterGroup title="Sprint">
+          {sprints.map((sprint) => (
+            <Chip key={sprint} active={selectedSprints.has(sprint)} onClick={() => onToggleSprint(sprint)}>
+              {sprint}
+            </Chip>
+          ))}
+          <Chip active={kanbanOnly} onClick={onToggleKanbanOnly}>
+            Kanban only
+          </Chip>
+        </FilterGroup>
+      )}
 
       <FilterGroup title="Status">
         {STATUS_OPTIONS.map((opt) => (

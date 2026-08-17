@@ -5,6 +5,7 @@ import { FilterBar } from "./components/FilterBar.js";
 import { TicketTable } from "./components/TicketTable.js";
 import { CommentDrawer } from "./components/CommentDrawer.js";
 import { SummarizePanel } from "./components/SummarizePanel.js";
+import { SprintHealth } from "./components/SprintHealth.js";
 
 type StatusCategory = Ticket["statusCategory"];
 
@@ -17,7 +18,9 @@ export default function App() {
   const [selectedTeams, setSelectedTeams] = useState<Set<string>>(new Set());
   const [selectedLabels, setSelectedLabels] = useState<Set<string>>(new Set());
   const [selectedStatuses, setSelectedStatuses] = useState<Set<StatusCategory>>(new Set());
+  const [selectedSprints, setSelectedSprints] = useState<Set<string>>(new Set());
   const [overdueOnly, setOverdueOnly] = useState(false);
+  const [kanbanOnly, setKanbanOnly] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -40,6 +43,10 @@ export default function App() {
 
   const teams = useMemo(() => uniqueSorted(tickets.map((t) => t.team)), [tickets]);
   const labels = useMemo(() => uniqueSorted(tickets.flatMap((t) => t.labels)), [tickets]);
+  const sprintNames = useMemo(
+    () => uniqueSorted(tickets.flatMap((t) => (t.sprint ? [t.sprint.name] : []))),
+    [tickets],
+  );
 
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
@@ -48,13 +55,20 @@ export default function App() {
       if (selectedTeams.size > 0 && !selectedTeams.has(t.team)) return false;
       if (selectedLabels.size > 0 && !t.labels.some((l) => selectedLabels.has(l))) return false;
       if (selectedStatuses.size > 0 && !selectedStatuses.has(t.statusCategory)) return false;
+      if (selectedSprints.size > 0 && !(t.sprint && selectedSprints.has(t.sprint.name))) return false;
+      if (kanbanOnly && t.sprint !== null) return false;
       if (overdueOnly && !(t.statusCategory !== "done" && t.dueDate !== null && t.dueDate < today)) return false;
       return true;
     });
-  }, [tickets, selectedTeams, selectedLabels, selectedStatuses, overdueOnly, today]);
+  }, [tickets, selectedTeams, selectedLabels, selectedStatuses, selectedSprints, kanbanOnly, overdueOnly, today]);
 
   const hasActiveFilters =
-    selectedTeams.size > 0 || selectedLabels.size > 0 || selectedStatuses.size > 0 || overdueOnly;
+    selectedTeams.size > 0 ||
+    selectedLabels.size > 0 ||
+    selectedStatuses.size > 0 ||
+    selectedSprints.size > 0 ||
+    kanbanOnly ||
+    overdueOnly;
 
   function toggle<T>(set: Set<T>, value: T, setter: (s: Set<T>) => void) {
     const next = new Set(set);
@@ -67,6 +81,8 @@ export default function App() {
     setSelectedTeams(new Set());
     setSelectedLabels(new Set());
     setSelectedStatuses(new Set());
+    setSelectedSprints(new Set());
+    setKanbanOnly(false);
     setOverdueOnly(false);
   }
 
@@ -95,18 +111,25 @@ export default function App() {
 
       {data && data.errors.length > 0 && <WorkspaceErrorBanner errors={data.errors} />}
 
+      {data && data.sprints.length > 0 && <SprintHealth sprints={data.sprints} />}
+
       {!loading && tickets.length > 0 && (
         <FilterBar
           teams={teams}
           labels={labels}
+          sprints={sprintNames}
           selectedTeams={selectedTeams}
           selectedLabels={selectedLabels}
           selectedStatuses={selectedStatuses}
+          selectedSprints={selectedSprints}
           overdueOnly={overdueOnly}
+          kanbanOnly={kanbanOnly}
           onToggleTeam={(team) => toggle(selectedTeams, team, setSelectedTeams)}
           onToggleLabel={(label) => toggle(selectedLabels, label, setSelectedLabels)}
           onToggleStatus={(status) => toggle(selectedStatuses, status, setSelectedStatuses)}
+          onToggleSprint={(sprint) => toggle(selectedSprints, sprint, setSelectedSprints)}
           onToggleOverdue={() => setOverdueOnly((v) => !v)}
+          onToggleKanbanOnly={() => setKanbanOnly((v) => !v)}
           onClear={clearFilters}
           hasActiveFilters={hasActiveFilters}
         />

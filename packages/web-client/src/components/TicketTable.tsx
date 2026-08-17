@@ -1,5 +1,6 @@
 import type { Ticket } from "@jira-dashboard/core";
 import { StatusBadge } from "./StatusBadge.js";
+import { SprintBadge } from "./SprintBadge.js";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -33,6 +34,7 @@ export function TicketTable({ tickets, onComment }: TicketTableProps) {
           <tr>
             <th>Key</th>
             <th>Team</th>
+            <th>Sprint</th>
             <th>Summary</th>
             <th>Assignee</th>
             <th>Due</th>
@@ -59,6 +61,9 @@ export function TicketTable({ tickets, onComment }: TicketTableProps) {
                     </span>
                   ))}
                 </div>
+              </td>
+              <td>
+                <SprintBadge sprint={ticket.sprint} />
               </td>
               <td className="cell-summary">{ticket.summary}</td>
               <td>{ticket.assignee ?? <span className="muted">Unassigned</span>}</td>

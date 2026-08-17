@@ -5,6 +5,7 @@ import type {
   JiraIssueSummary,
   JiraSearchResult,
   LatestComment,
+  SprintInfo,
 } from "./types.js";
 
 interface RawJiraComment {
@@ -38,6 +39,7 @@ export class JiraClient {
   private readonly baseUrl: string;
   private readonly storyPointsField?: string;
   private readonly etaField?: string;
+  private readonly sprintField?: string;
 
   constructor(config: JiraConfig, options: JiraClientOptions = {}) {
     this.baseUrl = config.baseUrl.replace(/\/+$/, "");
@@ -45,6 +47,7 @@ export class JiraClient {
       "Basic " + Buffer.from(`${config.email}:${config.apiToken}`).toString("base64");
     this.storyPointsField = options.storyPointsField;
     this.etaField = options.etaField;
+    this.sprintField = options.sprintField;
   }
 
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -81,6 +84,7 @@ export class JiraClient {
     const fields = ["summary", "status", "issuetype", "assignee", "updated", "duedate", "labels"];
     if (this.storyPointsField) fields.push(this.storyPointsField);
     if (this.etaField) fields.push(this.etaField);
+    if (this.sprintField) fields.push(this.sprintField);
     if (options.includeComments) fields.push("comment");
 
     const data = await this.request<{ total: number; issues: RawJiraIssue[] }>(
@@ -115,6 +119,7 @@ export class JiraClient {
   private normalizeIssue(issue: RawJiraIssue): JiraIssueSummary {
     const rawPoints = this.storyPointsField ? issue.fields[this.storyPointsField] : undefined;
     const rawEta = this.etaField ? issue.fields[this.etaField] : undefined;
+    const rawSprint = this.sprintField ? issue.fields[this.sprintField] : undefined;
 
     return {
       key: issue.key,
@@ -134,8 +139,84 @@ export class JiraClient {
       labels: issue.fields.labels ?? [],
       latestComment: extractLatestComment(issue.fields.comment),
       updated: issue.fields.updated,
+      sprint: parseSprintField(rawSprint),
     };
   }
+}
+
+/**
+ * The Sprint custom field's value shape has two forms in the wild:
+ *  - modern: an array of sprint objects, e.g.
+ *    [{ id, name, state, startDate, endDate, goal }]
+ *  - legacy: an array of stringified Java objects, e.g.
+ *    ["com.atlassian.greenhopper...Sprint@1[id=37,state=ACTIVE,name=Sprint 12,...]"]
+ * Some very old Jira Server/Data Center instances still return the legacy
+ * form even over the Cloud-shaped API. An issue can technically list
+ * several sprints (moved between them over time) — this picks the active
+ * one if there is one, else the most recently added entry, since that's
+ * almost always the current sprint a viewer cares about.
+ */
+function parseSprintField(raw: unknown): SprintInfo | null {
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+
+  const parsed = raw
+    .map((entry) => (typeof entry === "string" ? parseLegacySprintString(entry) : parseSprintObject(entry)))
+    .filter((s): s is SprintInfo => s !== null);
+
+  if (parsed.length === 0) return null;
+  return parsed.find((s) => s.state === "active") ?? parsed[parsed.length - 1];
+}
+
+function parseSprintObject(entry: unknown): SprintInfo | null {
+  if (typeof entry !== "object" || entry === null) return null;
+  const e = entry as Record<string, unknown>;
+  if (typeof e.id !== "number" && typeof e.id !== "string") return null;
+  const state = normalizeSprintState(e.state);
+  if (!state) return null;
+
+  return {
+    id: Number(e.id),
+    name: typeof e.name === "string" ? e.name : `Sprint ${e.id}`,
+    state,
+    startDate: typeof e.startDate === "string" ? e.startDate : null,
+    endDate: typeof e.endDate === "string" ? e.endDate : null,
+    goal: typeof e.goal === "string" && e.goal.length > 0 ? e.goal : null,
+  };
+}
+
+function parseLegacySprintString(raw: string): SprintInfo | null {
+  const match = raw.match(/\[(.+)\]$/);
+  if (!match) return null;
+  const fields = new Map<string, string>();
+  for (const pair of match[1].split(",")) {
+    const eq = pair.indexOf("=");
+    if (eq === -1) continue;
+    fields.set(pair.slice(0, eq).trim(), pair.slice(eq + 1).trim());
+  }
+  const id = fields.get("id");
+  const state = normalizeSprintState(fields.get("state"));
+  if (!id || !state) return null;
+
+  return {
+    id: Number(id),
+    name: fields.get("name") ?? `Sprint ${id}`,
+    state,
+    startDate: normalizeLegacyValue(fields.get("startDate")),
+    endDate: normalizeLegacyValue(fields.get("endDate")),
+    goal: normalizeLegacyValue(fields.get("goal")),
+  };
+}
+
+/** Jira's legacy Sprint.toString() format uses the literal string "<null>" for absent fields. */
+function normalizeLegacyValue(value: string | undefined): string | null {
+  if (!value || value === "<null>") return null;
+  return value;
+}
+
+function normalizeSprintState(value: unknown): SprintInfo["state"] | null {
+  const s = typeof value === "string" ? value.toLowerCase() : "";
+  if (s === "active" || s === "future" || s === "closed") return s;
+  return null;
 }
 
 function extractLatestComment(commentField?: { comments: RawJiraComment[] }): LatestComment | null {

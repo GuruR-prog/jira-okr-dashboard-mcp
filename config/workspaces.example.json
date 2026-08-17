@@ -8,6 +8,7 @@
     "apiTokenEnvVar": "JIRA_TEAM1_API_TOKEN",
     "storyPointsField": "customfield_10016",
     "etaField": "customfield_10050",
+    "sprintField": "customfield_10020",
     "jql": "project = PLAT AND resolution = Unresolved ORDER BY updated DESC"
   },
   {
@@ -18,11 +19,12 @@
     "email": "you@example.com",
     "apiTokenEnvVar": "JIRA_TEAM2_API_TOKEN",
     "storyPointsField": "customfield_10016",
+    "sprintField": "customfield_10020",
     "jql": "project = PAY AND resolution = Unresolved ORDER BY updated DESC"
   },
   {
     "id": "team3-security",
-    "label": "Team 3 — Security Engineering (separate Jira site)",
+    "label": "Team 3 — Security Engineering (Kanban, separate Jira site)",
     "team": "Team 3",
     "baseUrl": "https://your-other-team.atlassian.net",
     "email": "you@example.com",

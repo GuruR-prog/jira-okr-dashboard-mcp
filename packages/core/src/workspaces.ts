@@ -67,6 +67,7 @@ function validateWorkspace(entry: unknown, index: number, configPath: string): W
     apiTokenEnvVar: e.apiTokenEnvVar as string,
     storyPointsField: typeof e.storyPointsField === "string" ? e.storyPointsField : undefined,
     etaField: typeof e.etaField === "string" ? e.etaField : undefined,
+    sprintField: typeof e.sprintField === "string" ? e.sprintField : undefined,
     jql: e.jql as string,
   };
 }

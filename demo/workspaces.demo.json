@@ -8,6 +8,7 @@
     "apiTokenEnvVar": "MOCK_JIRA_TOKEN",
     "storyPointsField": "customfield_10016",
     "etaField": "customfield_10050",
+    "sprintField": "customfield_10020",
     "jql": "labels = \"project-ecommerce\" ORDER BY updated DESC"
   },
   {
@@ -18,11 +19,12 @@
     "email": "demo@example.com",
     "apiTokenEnvVar": "MOCK_JIRA_TOKEN",
     "storyPointsField": "customfield_10016",
+    "sprintField": "customfield_10020",
     "jql": "labels = \"project-ecommerce\" ORDER BY updated DESC"
   },
   {
     "id": "team3-security",
-    "label": "Team 3 — Security Engineering",
+    "label": "Team 3 — Security Engineering (Kanban)",
     "team": "Team 3",
     "baseUrl": "http://localhost:4569",
     "email": "demo@example.com",

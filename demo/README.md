@@ -27,11 +27,17 @@ npm run web-client
 ```
 
 Open the client (Vite prints the URL, typically http://localhost:5173).
-You'll see all 13 fixture tickets across the three teams — filter by team
-or label, click **Comment** on a ticket to post one (it round-trips
-through the mock server's in-memory store), or click **Summarize &
-generate report** to see Claude produce a real status summary over
-whatever's currently filtered.
+You'll see all 13 fixture tickets across the three teams — filter by team,
+label, or sprint, click **Comment** on a ticket to post one (it
+round-trips through the mock server's in-memory store), or click
+**Summarize & generate report** to see Claude produce a real status
+summary over whatever's currently filtered.
+
+Team 1 and Team 2 are on Scrum sprints (Sprint 12 and Sprint 8), deliberately
+set up to show one **at-risk** sprint and one **on-track** sprint side by
+side in the Sprint Health panel. Team 3 is Kanban — no `sprintField`
+configured for it at all — so its tickets correctly show a muted "Kanban"
+badge instead of a missing value. Filter by "Kanban only" to see just Team 3.
 
 `demo/workspaces.demo.json` is the workspace config pointing at the three
 mock ports — copy its shape for `config/workspaces.json` when you're ready
