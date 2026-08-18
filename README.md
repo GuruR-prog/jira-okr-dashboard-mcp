@@ -6,10 +6,14 @@ A Jira-over-MCP toolkit, built up in three stages:
    client (Claude Desktop, Claude Code, ...).
 2. **A one-shot CLI** that drives Claude through those tools to write a
    static OKR status report.
-3. **A live, multi-workspace web dashboard** — pull tickets from several
-   Jira sites/teams into one view, filter by team or project label,
-   comment on tickets without leaving the page, and get an AI-generated
-   status summary of whatever you're currently looking at.
+3. **A live, multi-workspace web dashboard** — codenamed **Looking
+   Glass** in the app itself — pulling tickets from several Jira
+   sites/teams into one view: filter by team, project label, or sprint;
+   comment on tickets without leaving the page; see whether each active
+   sprint is on track to finish; and a second tab for on-call rosters and
+   Jira-native incidents, correlated against who was on call when each
+   one was reported. An AI-generated status summary covers whatever
+   you're currently looking at, in either tab.
 
 This is a clean-room, open-source rebuild of internal tools I built at
 work — same ideas (AI-generated Jira visibility via MCP, Claude-assisted
@@ -37,7 +41,7 @@ flowchart TB
         direction LR
         UI["React UI<br/>(web-client)"]
         API["Express API<br/>(web-server)"]
-        UI <-->|"REST: tickets, comments, summarize"| API
+        UI <-->|"REST: tickets, comments, summarize, oncall, incidents"| API
     end
 
     subgraph MCPTrack["MCP Track — packages/mcp-server + dashboard-cli (separate, optional)"]
@@ -72,12 +76,18 @@ flowchart TB
 
 ## The web dashboard
 
-The headline feature. As an engineering leader with a few teams, each
-possibly living in a different Jira project or even a different Atlassian
-site, this answers "what's actually going on across all of it" in one
-screen — key, summary, assignee, due date, ETA, status, and the latest
-comment, tagged by team and project label, with a comment box and an
-AI summarize button.
+The headline feature — titled **Looking Glass** in the browser tab and
+header. As an engineering leader with a few teams, each possibly living
+in a different Jira project or even a different Atlassian site, this
+answers "what's actually going on across all of it" in one place, across
+two tabs:
+
+- **Tickets** — key, summary, assignee, due date, ETA, sprint, status,
+  and the latest comment, tagged by team and project label, with a
+  comment box and an AI summarize button
+- **On-Call & Incidents** — who's on call right now (primary/secondary,
+  with timezone), and Jira-native incidents correlated against who was
+  on call when each one was reported
 
 ```bash
 npm install
@@ -230,6 +240,9 @@ flowchart LR
   runs fine without it — the roster panel says so plainly, and incidents
   just show "Unknown" instead of a name rather than the feature failing to
   load.
+- **Team and date-range filters** narrow the incidents table independently
+  of the High severity / Sev3-and-below tabs — both tab counts update to
+  reflect whatever's currently filtered, same pattern as the Tickets tab.
 
 ```bash
 cp config/oncall.example.json config/oncall.json
@@ -322,7 +335,7 @@ packages/
     src/OnCallIncidentsView.tsx  The on-call & incidents tab
     src/components/SprintHealth.tsx  On-track/at-risk/will-miss cards for active + future sprints
     src/components/OnCallRoster.tsx  Primary/secondary cards with timezone + rotation preview
-    src/components/IncidentsView.tsx  High/Sev3-below tabs + drill-in table
+    src/components/IncidentsView.tsx  High/Sev3-below tabs, team + date-range filters, drill-in table
 demo/
   mock-jira-server.mjs         Three fixture Jira sites (ports 4567-4569) — see demo/README.md
   mock-pagerduty-server.mjs    Fixture PagerDuty server (port 4570) — three schedules, current + upcoming shifts
