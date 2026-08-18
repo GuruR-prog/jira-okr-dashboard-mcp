@@ -721,6 +721,34 @@ body {
   gap: 0.3rem;
 }
 
+/* ---------- date range filter ---------- */
+.date-range {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.date-input {
+  font-size: 0.78rem;
+  font-family: inherit;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.3em 0.5em;
+  color: var(--ink);
+}
+.date-input::-webkit-calendar-picker-indicator {
+  filter: var(--date-icon-filter, none);
+}
+@media (prefers-color-scheme: dark) {
+  .date-input::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+  }
+}
+.date-range-sep {
+  color: var(--ink-faint);
+  font-size: 0.8rem;
+}
+
 /* ---------- incidents ---------- */
 .incident-tabs {
   display: flex;

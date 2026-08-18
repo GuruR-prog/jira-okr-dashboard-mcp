@@ -7,13 +7,53 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+/** The date portion (YYYY-MM-DD) in the viewer's local time, for comparing against <input type="date"> values. */
+function localDateKey(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function uniqueSorted(values: string[]): string[] {
+  return [...new Set(values)].sort((a, b) => a.localeCompare(b));
+}
+
 export function IncidentsView({ incidents, onCallConfigured }: { incidents: Incident[]; onCallConfigured: boolean }) {
   const [tab, setTab] = useState<"high" | "low">("high");
   const [selected, setSelected] = useState<Incident | null>(null);
+  const [selectedTeams, setSelectedTeams] = useState<Set<string>>(new Set());
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
-  const high = useMemo(() => incidents.filter((i) => i.isHighSeverity), [incidents]);
-  const low = useMemo(() => incidents.filter((i) => !i.isHighSeverity), [incidents]);
+  const teams = useMemo(() => uniqueSorted(incidents.map((i) => i.team)), [incidents]);
+
+  const filtered = useMemo(() => {
+    return incidents.filter((i) => {
+      if (selectedTeams.size > 0 && !selectedTeams.has(i.team)) return false;
+      const reportedDate = localDateKey(i.created);
+      if (dateFrom && reportedDate < dateFrom) return false;
+      if (dateTo && reportedDate > dateTo) return false;
+      return true;
+    });
+  }, [incidents, selectedTeams, dateFrom, dateTo]);
+
+  const high = useMemo(() => filtered.filter((i) => i.isHighSeverity), [filtered]);
+  const low = useMemo(() => filtered.filter((i) => !i.isHighSeverity), [filtered]);
   const visible = tab === "high" ? high : low;
+
+  const hasActiveFilters = selectedTeams.size > 0 || dateFrom !== "" || dateTo !== "";
+
+  function toggleTeam(team: string) {
+    const next = new Set(selectedTeams);
+    if (next.has(team)) next.delete(team);
+    else next.add(team);
+    setSelectedTeams(next);
+  }
+
+  function clearFilters() {
+    setSelectedTeams(new Set());
+    setDateFrom("");
+    setDateTo("");
+  }
 
   if (incidents.length === 0) {
     return (
@@ -27,6 +67,54 @@ export function IncidentsView({ incidents, onCallConfigured }: { incidents: Inci
 
   return (
     <div>
+      <div className="filter-bar">
+        <div className="filter-group">
+          <span className="filter-group-title">Team</span>
+          <div className="filter-group-chips">
+            {teams.map((team) => (
+              <button
+                type="button"
+                key={team}
+                className={`chip ${selectedTeams.has(team) ? "chip-active" : ""}`}
+                aria-pressed={selectedTeams.has(team)}
+                onClick={() => toggleTeam(team)}
+              >
+                {team}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="filter-group">
+          <span className="filter-group-title">Reported between</span>
+          <div className="date-range">
+            <input
+              type="date"
+              className="date-input"
+              value={dateFrom}
+              max={dateTo || undefined}
+              onChange={(e) => setDateFrom(e.target.value)}
+              aria-label="Reported from"
+            />
+            <span className="date-range-sep">–</span>
+            <input
+              type="date"
+              className="date-input"
+              value={dateTo}
+              min={dateFrom || undefined}
+              onChange={(e) => setDateTo(e.target.value)}
+              aria-label="Reported to"
+            />
+          </div>
+        </div>
+
+        {hasActiveFilters && (
+          <button type="button" className="filter-clear" onClick={clearFilters}>
+            Clear filters
+          </button>
+        )}
+      </div>
+
       <div className="incident-tabs">
         <button type="button" className={`incident-tab ${tab === "high" ? "incident-tab-active" : ""}`} onClick={() => setTab("high")}>
           High severity ({high.length})
@@ -44,7 +132,9 @@ export function IncidentsView({ incidents, onCallConfigured }: { incidents: Inci
       )}
 
       {visible.length === 0 ? (
-        <div className="empty-state">No incidents in this tab.</div>
+        <div className="empty-state">
+          {hasActiveFilters ? "No incidents match the current filters." : "No incidents in this tab."}
+        </div>
       ) : (
         <div className="table-scroll">
           <table className="ticket-table">
