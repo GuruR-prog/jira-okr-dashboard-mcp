@@ -79,6 +79,12 @@ body {
   margin: 0;
 }
 
+.app-tagline {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  margin: 0.2rem 0 0;
+}
+
 .app-subtitle {
   color: var(--ink-soft);
   font-size: 0.85rem;

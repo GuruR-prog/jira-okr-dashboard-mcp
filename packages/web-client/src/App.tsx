@@ -11,7 +11,8 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <div>
-          <h1>Team Jira Dashboard</h1>
+          <h1>Looking Glass</h1>
+          <p className="app-tagline">My teams' project stories, status, on-call, and incidents — in one place.</p>
           <nav className="app-tabs">
             <button
               type="button"
