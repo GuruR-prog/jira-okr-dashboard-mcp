@@ -24,11 +24,11 @@ back the web dashboard, the CLI, and the low-level tools.
 
 | Package | What it is |
 |---|---|
-| `packages/core` | Shared `JiraClient`, types, workspace config loader. Everything else depends on this. |
+| `packages/core` | Shared `JiraClient`, types, workspace config loader, on-call provider interface. Everything else depends on this. |
 | `packages/mcp-server` | MCP server exposing Jira tools to any MCP client (Claude Desktop, Claude Code, ...). |
 | `packages/dashboard-cli` | One-shot CLI: spawns the MCP server, lets Claude drive it, writes a static `dashboard.html`. |
-| `packages/web-server` | Express API aggregating multiple Jira workspaces, with a `/api/summarize` endpoint. |
-| `packages/web-client` | React + Vite dashboard UI. |
+| `packages/web-server` | Express API aggregating multiple Jira workspaces, on-call roster + incident correlation, `/api/summarize`. |
+| `packages/web-client` | React + Vite dashboard UI — tickets tab and on-call/incidents tab. |
 
 If you're adding a feature, it almost certainly belongs in exactly one of
 these — resist the urge to reach across packages beyond importing from

@@ -1,3 +1,5 @@
+import type { OnCallPerson } from "./oncall/types.js";
+
 export interface JiraConfig {
   baseUrl: string; // e.g. https://yourteam.atlassian.net
   email: string;
@@ -17,6 +19,13 @@ export interface JiraClientOptions {
    * renders as "Kanban" rather than a missing value.
    */
   sprintField?: string;
+  /**
+   * Field carrying an incident's severity — defaults to Jira's standard
+   * `priority` field if unset, since many orgs repurpose Priority for
+   * incident severity rather than adding a dedicated custom field. Set to
+   * a custom field ID if your org tracks severity separately.
+   */
+  severityField?: string;
 }
 
 export interface LatestComment {
@@ -55,8 +64,12 @@ export interface JiraIssueSummary {
   /** Only populated when the caller asks for it — costs an extra field on the Jira side. */
   latestComment: LatestComment | null;
   updated: string;
+  /** When the issue was originally reported — used to correlate incidents with who was on call at the time. */
+  created: string;
   /** null for Kanban boards, or Scrum boards where sprintField isn't configured. */
   sprint: SprintInfo | null;
+  /** Raw severity value (e.g. "Sev1", "P2") — null unless severityField (or the default Priority field) has a value. */
+  severity: string | null;
 }
 
 export interface JiraSearchResult {
@@ -100,6 +113,24 @@ export interface WorkspaceConfig {
   etaField?: string;
   /** Omit for Kanban-only workspaces — see JiraClientOptions.sprintField. */
   sprintField?: string;
+  /** See JiraClientOptions.severityField — defaults to Jira's Priority field if unset. */
+  severityField?: string;
+  /**
+   * The full set of severity values that mean "this ticket is an
+   * incident" — e.g. ["Sev1", "Sev2", "Sev2.5", "Sev3"]. This is required
+   * for incident detection to do anything: Jira's Priority field (the
+   * default severityField) is set on nearly every ticket regardless of
+   * type, so "severity is non-null" alone would misclassify ordinary
+   * work items as incidents. Leave unset and this workspace contributes
+   * no incidents at all, rather than guessing wrong.
+   */
+  severityValues?: string[];
+  /**
+   * Which of severityValues count as "high" — e.g. ["Sev1", "Sev2", "Sev2.5"].
+   * Drives which incidents surface on the main incidents view vs. the
+   * lower-severity tab.
+   */
+  highSeverityValues?: string[];
   /** JQL scoping which issues from this workspace belong on the dashboard. */
   jql: string;
 }
@@ -158,4 +189,25 @@ export interface SprintProgress {
   percentTimeElapsed: number | null;
   daysRemaining: number | null;
   projection: SprintProjection;
+}
+
+/** Who was on call, per escalation level, at the moment an incident was reported — null levels mean no coverage found for that level. */
+export interface IncidentOnCall {
+  primary: OnCallPerson | null;
+  secondary: OnCallPerson | null;
+}
+
+/**
+ * A Jira ticket that represents an incident — same shape as any other
+ * ticket, plus a non-null severity and (when on-call config + schedule
+ * history allow it) who was on call for it at report time. Incidents
+ * aren't a separate system: they're regular tickets from a workspace that
+ * has severityField configured, filtered down to the ones that have a
+ * severity value set.
+ */
+export interface Incident extends Ticket {
+  severity: string;
+  isHighSeverity: boolean;
+  /** Null when there's no on-call config, or the provider has no schedule history that far back. */
+  onCall: IncidentOnCall | null;
 }

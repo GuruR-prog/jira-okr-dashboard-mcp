@@ -68,6 +68,13 @@ function validateWorkspace(entry: unknown, index: number, configPath: string): W
     storyPointsField: typeof e.storyPointsField === "string" ? e.storyPointsField : undefined,
     etaField: typeof e.etaField === "string" ? e.etaField : undefined,
     sprintField: typeof e.sprintField === "string" ? e.sprintField : undefined,
+    severityField: typeof e.severityField === "string" ? e.severityField : undefined,
+    severityValues: Array.isArray(e.severityValues)
+      ? e.severityValues.filter((v): v is string => typeof v === "string")
+      : undefined,
+    highSeverityValues: Array.isArray(e.highSeverityValues)
+      ? e.highSeverityValues.filter((v): v is string => typeof v === "string")
+      : undefined,
     jql: e.jql as string,
   };
 }

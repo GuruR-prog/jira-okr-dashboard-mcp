@@ -1,0 +1,9 @@
+{
+  "provider": "pagerduty",
+  "apiTokenEnvVar": "MOCK_PAGERDUTY_TOKEN",
+  "schedules": [
+    { "scheduleId": "PLAT001", "team": "Team 1" },
+    { "scheduleId": "PAY001", "team": "Team 2" },
+    { "scheduleId": "SEC001", "team": "Team 3" }
+  ]
+}

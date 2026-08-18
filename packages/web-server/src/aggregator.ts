@@ -42,6 +42,28 @@ export class Aggregator {
     }));
   }
 
+  /** Per-workspace set of severity values that mean "this is an incident at all". */
+  get severityValuesByWorkspace(): Map<string, Set<string>> {
+    const map = new Map<string, Set<string>>();
+    for (const { config } of this.entries.values()) {
+      if (config.severityValues && config.severityValues.length > 0) {
+        map.set(config.id, new Set(config.severityValues));
+      }
+    }
+    return map;
+  }
+
+  /** Per-workspace set of severity values that count as "high" — used to classify incidents. */
+  get highSeverityValuesByWorkspace(): Map<string, Set<string>> {
+    const map = new Map<string, Set<string>>();
+    for (const { config } of this.entries.values()) {
+      if (config.highSeverityValues && config.highSeverityValues.length > 0) {
+        map.set(config.id, new Set(config.highSeverityValues));
+      }
+    }
+    return map;
+  }
+
   getWorkspaceClient(workspaceId: string): JiraClient {
     const entry = this.entries.get(workspaceId);
     if (!entry) {

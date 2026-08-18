@@ -17,19 +17,25 @@ node demo/mock-jira-server.mjs
 # terminal 1
 node demo/mock-jira-server.mjs
 
-# terminal 2 — needs ANTHROPIC_API_KEY in your .env for the Summarize button
+# terminal 2
+node demo/mock-pagerduty-server.mjs
+
+# terminal 3 — needs ANTHROPIC_API_KEY in your .env for the Summarize button
 MOCK_JIRA_TOKEN=unused \
+MOCK_PAGERDUTY_TOKEN=unused \
+PAGERDUTY_API_BASE=http://localhost:4570 \
 WORKSPACES_CONFIG_PATH="$(pwd)/demo/workspaces.demo.json" \
+ONCALL_CONFIG_PATH="$(pwd)/demo/oncall.demo.json" \
 npm run web-server
 
-# terminal 3
+# terminal 4
 npm run web-client
 ```
 
 Open the client (Vite prints the URL, typically http://localhost:5173).
-You'll see all 13 fixture tickets across the three teams — filter by team,
-label, or sprint, click **Comment** on a ticket to post one (it
-round-trips through the mock server's in-memory store), or click
+You'll see all 13 regular tickets plus 6 incidents across the three teams
+— filter by team, label, or sprint, click **Comment** on a ticket to post
+one (it round-trips through the mock server's in-memory store), or click
 **Summarize & generate report** to see Claude produce a real status
 summary over whatever's currently filtered.
 
@@ -39,9 +45,17 @@ side in the Sprint Health panel. Team 3 is Kanban — no `sprintField`
 configured for it at all — so its tickets correctly show a muted "Kanban"
 badge instead of a missing value. Filter by "Kanban only" to see just Team 3.
 
-`demo/workspaces.demo.json` is the workspace config pointing at the three
-mock ports — copy its shape for `config/workspaces.json` when you're ready
-to point at real Jira sites instead.
+Switch to the **On-Call & Incidents** tab to see the roster (Primary/
+Secondary per team with timezone, plus a rotation preview) and the 6
+fixture incidents split across "High severity" and "Sev3 & below" tabs.
+Each incident's report timestamp is timed to land inside a specific
+on-call shift, so drilling into one shows real primary/secondary
+correlation — not just whoever's on call right now.
+
+`demo/workspaces.demo.json` / `demo/oncall.demo.json` are the configs
+pointing at the fixture servers — copy their shapes for
+`config/workspaces.json` / `config/oncall.json` when you're ready to
+point at a real Jira + PagerDuty setup instead.
 
 ## Try the low-level tools directly (no Anthropic key needed)
 
@@ -91,3 +105,14 @@ enough for this project's client to work against:
 
 It's a test fixture, not a JQL engine or a persistent store — don't reach
 for it as a stand-in for the real API's query language or durability.
+
+`mock-pagerduty-server.mjs` implements the two endpoints
+`PagerDutyProvider` actually calls, on port 4570:
+
+- `GET /oncalls` — on-call shifts overlapping a `since`/`until` window,
+  respecting the interval overlap correctly (this is what makes
+  point-in-time incident correlation work, not just "current on-call")
+- `GET /users` — batch lookup for name/email/time zone
+
+Three schedules (`PLAT001`, `PAY001`, `SEC001`) map 1:1 to the three demo
+Jira teams, each with a primary/secondary rotation.

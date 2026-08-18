@@ -9,7 +9,18 @@
     "storyPointsField": "customfield_10016",
     "etaField": "customfield_10050",
     "sprintField": "customfield_10020",
-    "jql": "project = PLAT AND resolution = Unresolved ORDER BY updated DESC"
+    "jql": "project = PLAT AND resolution = Unresolved ORDER BY updated DESC",
+    "highSeverityValues": [
+      "Sev1",
+      "Sev2",
+      "Sev2.5"
+    ],
+    "severityValues": [
+      "Sev1",
+      "Sev2",
+      "Sev2.5",
+      "Sev3"
+    ]
   },
   {
     "id": "team2-checkout",
@@ -20,7 +31,18 @@
     "apiTokenEnvVar": "JIRA_TEAM2_API_TOKEN",
     "storyPointsField": "customfield_10016",
     "sprintField": "customfield_10020",
-    "jql": "project = PAY AND resolution = Unresolved ORDER BY updated DESC"
+    "jql": "project = PAY AND resolution = Unresolved ORDER BY updated DESC",
+    "highSeverityValues": [
+      "Sev1",
+      "Sev2",
+      "Sev2.5"
+    ],
+    "severityValues": [
+      "Sev1",
+      "Sev2",
+      "Sev2.5",
+      "Sev3"
+    ]
   },
   {
     "id": "team3-security",
@@ -29,6 +51,17 @@
     "baseUrl": "https://your-other-team.atlassian.net",
     "email": "you@example.com",
     "apiTokenEnvVar": "JIRA_TEAM3_API_TOKEN",
-    "jql": "labels = \"project-security\" AND resolution = Unresolved ORDER BY updated DESC"
+    "jql": "labels = \"project-security\" AND resolution = Unresolved ORDER BY updated DESC",
+    "highSeverityValues": [
+      "Sev1",
+      "Sev2",
+      "Sev2.5"
+    ],
+    "severityValues": [
+      "Sev1",
+      "Sev2",
+      "Sev2.5",
+      "Sev3"
+    ]
   }
 ]

@@ -1,4 +1,4 @@
-import type { AggregatedTickets, Ticket } from "@jira-dashboard/core";
+import type { AggregatedTickets, Incident, OnCallRosterEntry, Ticket, WorkspaceFetchError } from "@jira-dashboard/core";
 
 // Empty by default so requests go to relative "/api/..." paths, which the
 // Vite dev proxy forwards to the web-server (see vite.config.ts). Set
@@ -41,4 +41,24 @@ export function summarize(tickets: Ticket[]): Promise<SummarizeResponse> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ tickets }),
   }).then((res) => handle(res));
+}
+
+export interface OnCallResponse {
+  configured: boolean;
+  roster: OnCallRosterEntry[];
+}
+
+export function fetchOnCall(): Promise<OnCallResponse> {
+  return fetch(`${API_BASE}/api/oncall`).then((res) => handle<OnCallResponse>(res));
+}
+
+export interface IncidentsResponse {
+  incidents: Incident[];
+  errors: WorkspaceFetchError[];
+  onCallConfigured: boolean;
+  fetchedAt: string;
+}
+
+export function fetchIncidents(): Promise<IncidentsResponse> {
+  return fetch(`${API_BASE}/api/incidents`).then((res) => handle<IncidentsResponse>(res));
 }

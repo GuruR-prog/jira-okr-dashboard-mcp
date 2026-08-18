@@ -9,7 +9,18 @@
     "storyPointsField": "customfield_10016",
     "etaField": "customfield_10050",
     "sprintField": "customfield_10020",
-    "jql": "labels = \"project-ecommerce\" ORDER BY updated DESC"
+    "jql": "labels = \"project-ecommerce\" ORDER BY updated DESC",
+    "highSeverityValues": [
+      "Sev1",
+      "Sev2",
+      "Sev2.5"
+    ],
+    "severityValues": [
+      "Sev1",
+      "Sev2",
+      "Sev2.5",
+      "Sev3"
+    ]
   },
   {
     "id": "team2-checkout",
@@ -20,7 +31,18 @@
     "apiTokenEnvVar": "MOCK_JIRA_TOKEN",
     "storyPointsField": "customfield_10016",
     "sprintField": "customfield_10020",
-    "jql": "labels = \"project-ecommerce\" ORDER BY updated DESC"
+    "jql": "labels = \"project-ecommerce\" ORDER BY updated DESC",
+    "highSeverityValues": [
+      "Sev1",
+      "Sev2",
+      "Sev2.5"
+    ],
+    "severityValues": [
+      "Sev1",
+      "Sev2",
+      "Sev2.5",
+      "Sev3"
+    ]
   },
   {
     "id": "team3-security",
@@ -30,6 +52,17 @@
     "email": "demo@example.com",
     "apiTokenEnvVar": "MOCK_JIRA_TOKEN",
     "storyPointsField": "customfield_10016",
-    "jql": "labels = \"project-security\" ORDER BY updated DESC"
+    "jql": "labels = \"project-security\" ORDER BY updated DESC",
+    "highSeverityValues": [
+      "Sev1",
+      "Sev2",
+      "Sev2.5"
+    ],
+    "severityValues": [
+      "Sev1",
+      "Sev2",
+      "Sev2.5",
+      "Sev3"
+    ]
   }
 ]

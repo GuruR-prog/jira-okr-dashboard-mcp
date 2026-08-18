@@ -161,6 +161,61 @@ for the exact math, and the demo's `SPRINT_12` / `SPRINT_8` fixtures in
 [`demo/mock-jira-server.mjs`](demo/mock-jira-server.mjs) for a live
 example of one at-risk and one on-track sprint side by side.
 
+### On-call & incidents
+
+A second tab in the web dashboard, built on a real distinction worth
+stating plainly: **incidents live in Jira, on-call schedules live in
+PagerDuty (or whatever you use) — this project never conflates the two.**
+
+```mermaid
+flowchart LR
+    Jira[("Jira — incident tickets<br/>(severity field)")] -->|"REST"| Incidents["Incidents view<br/>Sev1/2/2.5 vs Sev3-below tabs"]
+    PD[("PagerDuty — on-call schedules")] -->|"REST"| Roster["On-call roster<br/>Primary/Secondary + timezone"]
+    PD -->|"who was on call at<br/>incident.created?"| Correlate["Per-incident correlation"]
+    Incidents --> Correlate
+    Roster -.->|"schedule -> team mapping"| Correlate
+```
+
+- **On-call roster** — current Primary/Secondary per team, each with their
+  timezone, plus a short rotation preview ("next up"). Backed by a
+  provider-agnostic `OnCallProvider` interface
+  ([`packages/core/src/oncall/types.ts`](packages/core/src/oncall/types.ts))
+  — PagerDuty is the only implementation today
+  ([`pagerduty-provider.ts`](packages/core/src/oncall/pagerduty-provider.ts)),
+  but VictorOps/Opsgenie are meant to be additional implementations of that
+  same interface, not a rewrite of anything that calls it.
+- **Incidents aren't fetched from PagerDuty at all.** They're regular Jira
+  tickets from a workspace that has `severityValues` configured — an
+  explicit allow-list of what counts as an incident severity (e.g.
+  `["Sev1", "Sev2", "Sev2.5", "Sev3"]`), *not* "any ticket with a priority
+  set." That distinction matters: Jira's Priority field defaults to
+  something on nearly every ticket regardless of type, so treating
+  "severity is non-null" as "this is an incident" would misclassify your
+  entire backlog. `highSeverityValues` is the subset of that allow-list
+  that surfaces on the prominent tab; everything else lands on "Sev3 & below."
+- **Correlation, not assignment.** "Who was on call" for an incident isn't
+  read off the ticket's assignee — it's computed by asking the on-call
+  provider who was on call *at the incident's reported timestamp*
+  (`OnCallService.enrichWithOnCall` in
+  [`packages/web-server/src/oncall-service.ts`](packages/web-server/src/oncall-service.ts)).
+  An incident from three weeks ago correctly shows who was on call three
+  weeks ago, not whoever is on call right now.
+- **On-call is entirely optional.** No `config/oncall.json`? The dashboard
+  runs fine without it — the roster panel says so plainly, and incidents
+  just show "Unknown" instead of a name rather than the feature failing to
+  load.
+
+```bash
+cp config/oncall.example.json config/oncall.json
+# edit config/oncall.json — one PagerDuty schedule ID per team
+# add PAGERDUTY_API_TOKEN to .env
+```
+
+See [`demo/README.md`](demo/README.md) for a fixture PagerDuty server with
+three schedules and a couple of incidents timed to land inside specific
+shifts, so correlation has something real to demonstrate without a
+PagerDuty account.
+
 ## Why MCP for the server/CLI half
 
 MCP servers are often thought of as "an abstraction layer over a service"
@@ -228,19 +283,29 @@ packages/
     src/workspaces.ts          Multi-workspace config loading + validation
     src/adf.ts                 Atlassian Document Format <-> plain text (comments)
     src/sprint-progress.ts      Groups tickets by sprint, computes the on-track/at-risk/will-miss projection
+    src/incidents.ts            Filters tickets to incidents, classifies high/lower severity
+    src/oncall/                 OnCallProvider interface + PagerDutyProvider + config loader
   mcp-server/                 MCP server: search_issues, get_issue, get_okr_progress
   dashboard-cli/               One-shot CLI: MCP client + Claude tool-use loop -> static dashboard.html
   web-server/                  Express API: multi-workspace aggregation, comment posting, AI summarize
     src/aggregator.ts           Parallel fetch across workspaces with per-workspace error isolation
-    src/routes/                 tickets.ts, comments.ts, summarize.ts
+    src/oncall-service.ts        Schedule-id -> team mapping, on-call roster, per-incident correlation
+    src/routes/                 tickets.ts, comments.ts, summarize.ts, oncall.ts, incidents.ts
   web-client/                  React + Vite dashboard UI
+    src/TicketsView.tsx          The tickets tab: filters, table, sprint health, summarize
+    src/OnCallIncidentsView.tsx  The on-call & incidents tab
     src/components/SprintHealth.tsx  On-track/at-risk/will-miss cards for active + future sprints
+    src/components/OnCallRoster.tsx  Primary/secondary cards with timezone + rotation preview
+    src/components/IncidentsView.tsx  High/Sev3-below tabs + drill-in table
 demo/
   mock-jira-server.mjs         Three fixture Jira sites (ports 4567-4569) — see demo/README.md
-  workspaces.demo.json          Points config at the fixture servers
+  mock-pagerduty-server.mjs    Fixture PagerDuty server (port 4570) — three schedules, current + upcoming shifts
+  workspaces.demo.json          Points config at the fixture Jira servers
+  oncall.demo.json              Points config at the fixture PagerDuty server
   try-tools.ts                  Exercises the MCP tools directly, no UI
 config/
   workspaces.example.json       Template — copy to workspaces.json (gitignored) for your real teams
+  oncall.example.json           Template — copy to oncall.json (gitignored) for your real schedules
 ```
 
 ## Contributing
@@ -251,8 +316,9 @@ builds every package on each PR.
 
 ## Roadmap
 
-- [ ] On-call rotation + incident visibility — pluggable incident source (PagerDuty first, VictorOps/Opsgenie next), Sev-1/2/2.5 surfaced on the dashboard, Sev-3-and-below in a separate view
-- [ ] Tests around `getOkrProgress`/`computeSprintProgress`'s points-vs-count logic and the diff/ADF helpers
+- [ ] VictorOps and Opsgenie `OnCallProvider` implementations alongside PagerDuty
+- [ ] Cache/reuse a single ticket fetch between `/api/tickets` and `/api/incidents` instead of fetching Jira twice per page load
+- [ ] Tests around `getOkrProgress`/`computeSprintProgress`'s points-vs-count logic, the diff/ADF helpers, and incident severity classification
 - [ ] OAuth 2.0 (3LO) as an alternative to Jira API tokens
 - [ ] Support object-typed ETA custom fields (e.g. a select list), not just string/date fields
 - [ ] Velocity-based sprint forecasting using historical sprint data, as an alternative to the current pace heuristic

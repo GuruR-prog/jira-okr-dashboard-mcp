@@ -290,12 +290,15 @@ body {
 /* ---------- buttons ---------- */
 .btn-primary,
 .btn-secondary {
+  display: inline-block;
   font-size: 0.82rem;
   font-weight: 600;
   border-radius: 6px;
   padding: 0.5em 1em;
   cursor: pointer;
   border: 1px solid transparent;
+  text-decoration: none;
+  line-height: 1.4;
 }
 .btn-primary {
   background: var(--accent);
@@ -573,4 +576,223 @@ body {
   margin-top: 0.6rem;
   font-size: 0.76rem;
   color: var(--ink-faint);
+}
+
+/* ---------- app tabs ---------- */
+.app-tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.7rem;
+}
+.app-tab {
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--ink-soft);
+  border-radius: 6px;
+  padding: 0.45em 0.9em;
+  cursor: pointer;
+}
+.app-tab-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.view-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+/* ---------- on-call panel ---------- */
+.oncall-panel {
+  margin-bottom: 1.5rem;
+}
+.oncall-panel-title {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-faint);
+  margin: 0 0 0.5rem;
+}
+.oncall-panel-unconfigured {
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+}
+.oncall-panel-unconfigured code {
+  background: var(--bg);
+  border-radius: 4px;
+  padding: 0.1em 0.4em;
+  font-size: 0.85em;
+}
+.oncall-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.8rem;
+}
+.oncall-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+}
+.oncall-card-team {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+.oncall-card-schedule {
+  color: var(--ink-faint);
+  font-size: 0.76rem;
+  margin-top: 0.1rem;
+  margin-bottom: 0.6rem;
+}
+.oncall-role-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.3rem 0;
+}
+.oncall-role-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-radius: 4px;
+  padding: 0.15em 0.5em;
+  width: 5.2rem;
+  text-align: center;
+  flex: none;
+}
+.oncall-role-primary {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+.oncall-role-secondary {
+  background: var(--progress-bg);
+  color: var(--progress-ink);
+}
+.oncall-role-other {
+  background: var(--todo-bg);
+  color: var(--ink-faint);
+}
+.oncall-role-tag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  border-radius: 4px;
+  padding: 0.1em 0.4em;
+  margin-right: 0.4em;
+}
+.oncall-person {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4em;
+  font-size: 0.85rem;
+}
+.oncall-person-tz {
+  color: var(--ink-faint);
+  font-size: 0.72rem;
+}
+.oncall-upcoming {
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+}
+.oncall-upcoming-title {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink-faint);
+}
+.oncall-upcoming ul {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  font-size: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+/* ---------- incidents ---------- */
+.incident-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.incident-tab {
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--ink-soft);
+  border-radius: 99px;
+  padding: 0.4em 1em;
+  cursor: pointer;
+}
+.incident-tab-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.severity-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 4px;
+  padding: 0.18em 0.55em;
+  white-space: nowrap;
+}
+.severity-high {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+.severity-low {
+  background: var(--todo-bg);
+  color: var(--ink-faint);
+}
+
+/* ---------- incident detail ---------- */
+.drawer-wide {
+  width: min(640px, 100%);
+}
+.incident-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+}
+.incident-detail-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.incident-detail-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink-faint);
+}
+.incident-oncall-block {
+  background: var(--bg);
+  border-radius: 6px;
+  padding: 0.8rem 0.9rem;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.incident-oncall-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
 }

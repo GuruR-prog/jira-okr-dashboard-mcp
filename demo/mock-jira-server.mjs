@@ -24,22 +24,44 @@ function sprint(id, name, state, startDate, endDate, goal) {
   return { id, name, self: `http://localhost/rest/agile/1.0/sprint/${id}`, state, startDate, endDate, goal };
 }
 
-function issue(key, summary, statusName, categoryKey, assignee, points, duedate, labels, comments, eta, sprintObj) {
+/**
+ * Builds one fixture Jira issue. Takes an options object rather than a
+ * long positional list — this file's fixture count has grown enough
+ * (sprints, ETA, severity, ...) that positional params stopped being
+ * readable at the call site.
+ */
+function issue({
+  key,
+  summary,
+  status,
+  category,
+  assignee = null,
+  points = null,
+  duedate = null,
+  labels = [],
+  comments = [],
+  eta = null,
+  sprint: sprintObj = null,
+  severity = null,
+  created = "2026-08-01T09:00:00.000Z",
+}) {
   return {
     key,
     fields: {
       summary,
-      status: { name: statusName, statusCategory: { key: categoryKey } },
-      issuetype: { name: "Story" },
+      status: { name: status, statusCategory: { key: category } },
+      issuetype: { name: severity ? "Incident" : "Story" },
       assignee: assignee ? { displayName: assignee } : null,
       updated: "2026-08-14T10:00:00.000Z",
+      created,
       duedate,
       labels,
       customfield_10016: points,
-      customfield_10050: eta ?? null,
+      customfield_10050: eta,
       // Real Jira returns an array here (an issue can carry sprint history) —
       // see JiraClient.parseSprintField for why we always send an array.
       customfield_10020: sprintObj ? [sprintObj] : [],
+      priority: severity ? { name: severity } : { name: "Medium" },
       comment: { comments },
     },
   };
@@ -58,20 +80,25 @@ const DATASETS = {
   4567: {
     team: "Team 1 — Platform Engineering",
     issues: [
-      issue("PLAT-201", "Add multi-region failover for checkout", "Done", "done", "Priya N.", 8, "2026-07-15", ["project-ecommerce", "reliability"], [comment("Priya N.", "Failover tested in staging, looks solid.", "2026-08-12T09:00:00.000Z")], "2026-07-20", SPRINT_12),
-      issue("PLAT-202", "Migrate on-call runbooks to auto-generated docs", "In Progress", "indeterminate", "Wei L.", 5, "2026-08-25", ["project-ecommerce", "docs"], [comment("Wei L.", "Half the runbooks converted, on track.", "2026-08-13T15:30:00.000Z")], "2026-08-30", SPRINT_12),
-      issue("PLAT-203", "Reduce cold-start latency on the events consumer", "To Do", "new", null, 2, null, ["project-ecommerce", "performance"], [], null, SPRINT_12),
-      issue("PLAT-204", "Chaos test the payment service", "Blocked", "indeterminate", "Priya N.", 3, "2026-08-10", ["project-ecommerce", "reliability"], [comment("Priya N.", "Blocked on shared staging environment access.", "2026-08-11T11:20:00.000Z")], null, SPRINT_12),
-      issue("PLAT-205", "Define SLOs for fulfillment-routing service", "Done", "done", "Marcus T.", 3, "2026-07-01", ["project-ecommerce"], [comment("Marcus T.", "SLOs published, dashboards live.", "2026-07-02T08:00:00.000Z")], "2026-07-05", SPRINT_12),
+      issue({ key: "PLAT-201", summary: "Add multi-region failover for checkout", status: "Done", category: "done", assignee: "Priya N.", points: 8, duedate: "2026-07-15", labels: ["project-ecommerce", "reliability"], comments: [comment("Priya N.", "Failover tested in staging, looks solid.", "2026-08-12T09:00:00.000Z")], eta: "2026-07-20", sprint: SPRINT_12 }),
+      issue({ key: "PLAT-202", summary: "Migrate on-call runbooks to auto-generated docs", status: "In Progress", category: "indeterminate", assignee: "Wei L.", points: 5, duedate: "2026-08-25", labels: ["project-ecommerce", "docs"], comments: [comment("Wei L.", "Half the runbooks converted, on track.", "2026-08-13T15:30:00.000Z")], eta: "2026-08-30", sprint: SPRINT_12 }),
+      issue({ key: "PLAT-203", summary: "Reduce cold-start latency on the events consumer", status: "To Do", category: "new", points: 2, labels: ["project-ecommerce", "performance"], sprint: SPRINT_12 }),
+      issue({ key: "PLAT-204", summary: "Chaos test the payment service", status: "Blocked", category: "indeterminate", assignee: "Priya N.", points: 3, duedate: "2026-08-10", labels: ["project-ecommerce", "reliability"], comments: [comment("Priya N.", "Blocked on shared staging environment access.", "2026-08-11T11:20:00.000Z")], sprint: SPRINT_12 }),
+      issue({ key: "PLAT-205", summary: "Define SLOs for fulfillment-routing service", status: "Done", category: "done", assignee: "Marcus T.", points: 3, duedate: "2026-07-01", labels: ["project-ecommerce"], comments: [comment("Marcus T.", "SLOs published, dashboards live.", "2026-07-02T08:00:00.000Z")], eta: "2026-07-05", sprint: SPRINT_12 }),
+      // Incidents — same workspace/team as the regular backlog above, distinguished by having a severity set at all (see extractIncidents in core).
+      issue({ key: "PLAT-501", summary: "Checkout API returning 500s for EU traffic", status: "Done", category: "done", assignee: "Priya N.", labels: ["project-ecommerce", "incident"], comments: [comment("Priya N.", "Rolled back the bad deploy, error rate back to baseline.", "2026-08-13T14:50:00.000Z")], severity: "Sev1", created: "2026-08-13T14:22:00.000Z" }),
+      issue({ key: "PLAT-502", summary: "Elevated latency on fulfillment-routing", status: "Done", category: "done", assignee: "Wei L.", labels: ["project-ecommerce", "incident"], comments: [comment("Wei L.", "Traced to a noisy neighbor pod, rescheduled and resolved.", "2026-08-15T03:00:00.000Z")], severity: "Sev3", created: "2026-08-15T02:10:00.000Z" }),
     ],
   },
   4568: {
     team: "Team 2 — Checkout & Payments",
     issues: [
-      issue("PAY-301", "Add idempotency keys to payment capture", "In Progress", "indeterminate", "Sam R.", 8, "2026-08-20", ["project-ecommerce", "payments"], [comment("Sam R.", "Design reviewed, implementation started.", "2026-08-14T13:00:00.000Z")], null, SPRINT_8),
-      issue("PAY-302", "Fix double-charge race condition on retry", "Done", "done", "Sam R.", 5, "2026-08-01", ["project-ecommerce", "payments", "bug"], [comment("Sam R.", "Fixed and verified in prod.", "2026-08-02T10:00:00.000Z")], null, SPRINT_8),
-      issue("PAY-303", "PCI compliance audit follow-ups", "To Do", "new", null, 5, "2026-09-01", ["project-ecommerce", "payments", "compliance"], [], null, SPRINT_8),
-      issue("PAY-304", "Add Apple Pay support", "Blocked", "indeterminate", "Jordan K.", 8, "2026-08-05", ["project-ecommerce", "payments"], [comment("Jordan K.", "Blocked on vendor certificate renewal.", "2026-08-09T16:45:00.000Z")], null, SPRINT_8),
+      issue({ key: "PAY-301", summary: "Add idempotency keys to payment capture", status: "In Progress", category: "indeterminate", assignee: "Sam R.", points: 8, duedate: "2026-08-20", labels: ["project-ecommerce", "payments"], comments: [comment("Sam R.", "Design reviewed, implementation started.", "2026-08-14T13:00:00.000Z")], sprint: SPRINT_8 }),
+      issue({ key: "PAY-302", summary: "Fix double-charge race condition on retry", status: "Done", category: "done", assignee: "Sam R.", points: 5, duedate: "2026-08-01", labels: ["project-ecommerce", "payments", "bug"], comments: [comment("Sam R.", "Fixed and verified in prod.", "2026-08-02T10:00:00.000Z")], sprint: SPRINT_8 }),
+      issue({ key: "PAY-303", summary: "PCI compliance audit follow-ups", status: "To Do", category: "new", points: 5, duedate: "2026-09-01", labels: ["project-ecommerce", "payments", "compliance"], sprint: SPRINT_8 }),
+      issue({ key: "PAY-304", summary: "Add Apple Pay support", status: "Blocked", category: "indeterminate", assignee: "Jordan K.", points: 8, duedate: "2026-08-05", labels: ["project-ecommerce", "payments"], comments: [comment("Jordan K.", "Blocked on vendor certificate renewal.", "2026-08-09T16:45:00.000Z")], sprint: SPRINT_8 }),
+      issue({ key: "PAY-601", summary: "Duplicate charges detected in EU region", status: "In Progress", category: "indeterminate", assignee: "Sam R.", labels: ["project-ecommerce", "payments", "incident"], comments: [comment("Sam R.", "Root cause narrowed to a retry-storm on the capture endpoint, mitigation in progress.", "2026-08-15T20:40:00.000Z")], severity: "Sev2", created: "2026-08-15T20:00:00.000Z" }),
+      issue({ key: "PAY-602", summary: "Minor UI glitch on receipt page", status: "Done", category: "done", assignee: "Jordan K.", labels: ["project-ecommerce", "incident"], comments: [comment("Jordan K.", "CSS fix shipped.", "2026-08-16T01:30:00.000Z")], severity: "Sev3", created: "2026-08-16T01:00:00.000Z" }),
     ],
   },
   4569: {
@@ -80,10 +107,12 @@ const DATASETS = {
     // issues report sprint: null end to end, same as a real Kanban team.
     team: "Team 3 — Security Engineering",
     issues: [
-      issue("SEC-401", "Rotate all service-to-service credentials", "In Progress", "indeterminate", "Alex F.", 5, "2026-08-22", ["project-security"], [comment("Alex F.", "60% rotated, on schedule.", "2026-08-14T09:10:00.000Z")]),
-      issue("SEC-402", "Post-incident review automation for Sev-1/Sev-2", "To Do", "new", null, 5, null, ["project-security", "reliability"], []),
-      issue("SEC-403", "Close out pen-test findings from Q2", "Done", "done", "Alex F.", 3, "2026-07-10", ["project-security"], [comment("Alex F.", "All findings remediated and verified.", "2026-07-11T12:00:00.000Z")]),
-      issue("SEC-404", "Implement least-privilege IAM review process", "Blocked", "indeterminate", "Nina P.", 8, "2026-07-30", ["project-security"], [comment("Nina P.", "Waiting on IAM team bandwidth.", "2026-07-29T14:00:00.000Z")]),
+      issue({ key: "SEC-401", summary: "Rotate all service-to-service credentials", status: "In Progress", category: "indeterminate", assignee: "Alex F.", points: 5, duedate: "2026-08-22", labels: ["project-security"], comments: [comment("Alex F.", "60% rotated, on schedule.", "2026-08-14T09:10:00.000Z")] }),
+      issue({ key: "SEC-402", summary: "Post-incident review automation for Sev-1/Sev-2", status: "To Do", category: "new", points: 5, labels: ["project-security", "reliability"] }),
+      issue({ key: "SEC-403", summary: "Close out pen-test findings from Q2", status: "Done", category: "done", assignee: "Alex F.", points: 3, duedate: "2026-07-10", labels: ["project-security"], comments: [comment("Alex F.", "All findings remediated and verified.", "2026-07-11T12:00:00.000Z")] }),
+      issue({ key: "SEC-404", summary: "Implement least-privilege IAM review process", status: "Blocked", category: "indeterminate", assignee: "Nina P.", points: 8, duedate: "2026-07-30", labels: ["project-security"], comments: [comment("Nina P.", "Waiting on IAM team bandwidth.", "2026-07-29T14:00:00.000Z")] }),
+      issue({ key: "SEC-701", summary: "Suspicious auth spike from single IP range", status: "In Progress", category: "indeterminate", assignee: "Alex F.", labels: ["project-security", "incident"], comments: [comment("Alex F.", "IP range blocked at the WAF, investigating scope.", "2026-08-16T05:50:00.000Z")], severity: "Sev2.5", created: "2026-08-16T05:30:00.000Z" }),
+      issue({ key: "SEC-702", summary: "Expired TLS cert on internal service", status: "Done", category: "done", assignee: "Nina P.", labels: ["project-security", "incident"], comments: [comment("Nina P.", "Cert renewed and auto-renewal alerting fixed.", "2026-08-16T08:40:00.000Z")], severity: "Sev1", created: "2026-08-16T08:00:00.000Z" }),
     ],
   },
 };

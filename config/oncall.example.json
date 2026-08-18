@@ -1,0 +1,9 @@
+{
+  "provider": "pagerduty",
+  "apiTokenEnvVar": "PAGERDUTY_API_TOKEN",
+  "schedules": [
+    { "scheduleId": "PXXXXXX", "team": "Team 1" },
+    { "scheduleId": "PYYYYYY", "team": "Team 2" },
+    { "scheduleId": "PZZZZZZ", "team": "Team 3" }
+  ]
+}

@@ -9,3 +9,6 @@ dashboard.html
 # Real per-user workspace config — contains your org's Jira sites/JQL.
 # Copy config/workspaces.example.json to config/workspaces.json to set this up.
 config/workspaces.json
+
+# Real on-call config — contains your PagerDuty schedule IDs.
+config/oncall.json

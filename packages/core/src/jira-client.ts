@@ -8,6 +8,8 @@ import type {
   SprintInfo,
 } from "./types.js";
 
+const DEFAULT_SEVERITY_FIELD = "priority";
+
 interface RawJiraComment {
   author?: { displayName?: string };
   body: unknown;
@@ -22,6 +24,7 @@ interface RawJiraIssue {
     issuetype: { name: string };
     assignee: { displayName: string } | null;
     updated: string;
+    created: string;
     duedate: string | null;
     labels?: string[];
     comment?: { comments: RawJiraComment[] };
@@ -40,6 +43,7 @@ export class JiraClient {
   private readonly storyPointsField?: string;
   private readonly etaField?: string;
   private readonly sprintField?: string;
+  private readonly severityField: string;
 
   constructor(config: JiraConfig, options: JiraClientOptions = {}) {
     this.baseUrl = config.baseUrl.replace(/\/+$/, "");
@@ -48,6 +52,7 @@ export class JiraClient {
     this.storyPointsField = options.storyPointsField;
     this.etaField = options.etaField;
     this.sprintField = options.sprintField;
+    this.severityField = options.severityField ?? DEFAULT_SEVERITY_FIELD;
   }
 
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -81,7 +86,7 @@ export class JiraClient {
     maxResults = 100,
     options: { includeComments?: boolean } = {},
   ): Promise<JiraSearchResult> {
-    const fields = ["summary", "status", "issuetype", "assignee", "updated", "duedate", "labels"];
+    const fields = ["summary", "status", "issuetype", "assignee", "updated", "created", "duedate", "labels", this.severityField];
     if (this.storyPointsField) fields.push(this.storyPointsField);
     if (this.etaField) fields.push(this.etaField);
     if (this.sprintField) fields.push(this.sprintField);
@@ -120,6 +125,7 @@ export class JiraClient {
     const rawPoints = this.storyPointsField ? issue.fields[this.storyPointsField] : undefined;
     const rawEta = this.etaField ? issue.fields[this.etaField] : undefined;
     const rawSprint = this.sprintField ? issue.fields[this.sprintField] : undefined;
+    const rawSeverity = issue.fields[this.severityField];
 
     return {
       key: issue.key,
@@ -139,9 +145,29 @@ export class JiraClient {
       labels: issue.fields.labels ?? [],
       latestComment: extractLatestComment(issue.fields.comment),
       updated: issue.fields.updated,
+      created: issue.fields.created,
       sprint: parseSprintField(rawSprint),
+      severity: parseSeverity(rawSeverity),
     };
   }
+}
+
+/**
+ * Severity/priority values come back in a few shapes depending on whether
+ * severityField points at Jira's standard Priority field (an object with
+ * `.name`) or a custom select-list field (often `.value` instead), or a
+ * plain-text custom field (a bare string). All three are supported; an
+ * unrecognized shape is left null rather than stringified into something
+ * misleading.
+ */
+function parseSeverity(raw: unknown): string | null {
+  if (typeof raw === "string") return raw;
+  if (raw && typeof raw === "object") {
+    const obj = raw as Record<string, unknown>;
+    if (typeof obj.name === "string") return obj.name;
+    if (typeof obj.value === "string") return obj.value;
+  }
+  return null;
 }
 
 /**
