@@ -57,6 +57,29 @@ pointing at the fixture servers — copy their shapes for
 `config/workspaces.json` / `config/oncall.json` when you're ready to
 point at a real Jira + PagerDuty setup instead.
 
+## Try the setup wizard against the mock server
+
+`scripts/setup-jira.mjs` (`npm run setup:jira`) works against the mock
+Jira server too — it implements the same three endpoints (`/myself`,
+`/project/search`, `/field`) the wizard uses against a real site, so you
+can see the whole flow (connection test, project picker, auto-detected
+Story Points/Sprint/ETA fields) without touching a real Jira account:
+
+```bash
+# terminal 1
+node demo/mock-jira-server.mjs
+
+# terminal 2
+npm run setup:jira
+# Jira base URL: http://localhost:4567
+# email: demo@example.com
+# API token: anything (the mock doesn't check it)
+```
+
+Point it at `:4568` or `:4569` for the other two teams. It'll append to
+`config/workspaces.json` (not the demo config) — remove the entry
+afterward if you were just trying it out.
+
 ## Try the low-level tools directly (no Anthropic key needed)
 
 ```bash
@@ -94,14 +117,17 @@ rather than templating a response.
 
 ## What the mock server implements
 
-Two endpoints per port, matching the real Jira Cloud REST API (v3) just
-enough for this project's client to work against:
+Five endpoints per port, matching the real Jira Cloud REST API (v3) just
+enough for this project's client and setup wizard to work against:
 
 - `POST /rest/api/3/search` — `key = "XXX"` filters to one issue,
   `maxResults` truncates, anything else returns the full fixture set for
   that port
 - `POST /rest/api/3/issue/:key/comment` — appends to that issue's
   in-memory comment list (lost on restart)
+- `GET /rest/api/3/myself`, `/rest/api/3/project/search`, `/rest/api/3/field`
+  — used by `scripts/setup-jira.mjs`, not the dashboard itself; see "Try
+  the setup wizard" above
 
 It's a test fixture, not a JQL engine or a persistent store — don't reach
 for it as a stand-in for the real API's query language or durability.

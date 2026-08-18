@@ -76,9 +76,24 @@ const SPRINT_12 = sprint(12, "Sprint 12", "active", "2026-08-04T00:00:00.000Z", 
 // so it should read "on-track" rather than "at-risk".
 const SPRINT_8 = sprint(8, "Sprint 8", "active", "2026-08-14T00:00:00.000Z", "2026-08-28T00:00:00.000Z", "Ship Apple Pay + close out PCI follow-ups");
 
+// Field catalog for GET /rest/api/3/field — lets the setup wizard
+// (scripts/setup-jira.mjs) auto-detect Story Points/Sprint/ETA field IDs
+// by name, same as it would against a real Jira site.
+const FIELDS = [
+  { id: "summary", name: "Summary" },
+  { id: "status", name: "Status" },
+  { id: "assignee", name: "Assignee" },
+  { id: "priority", name: "Priority" },
+  { id: "customfield_10016", name: "Story point estimate" },
+  { id: "customfield_10020", name: "Sprint" },
+  { id: "customfield_10050", name: "ETA" },
+];
+
 const DATASETS = {
   4567: {
     team: "Team 1 — Platform Engineering",
+    projectKey: "PLAT",
+    projectName: "Platform Engineering",
     issues: [
       issue({ key: "PLAT-201", summary: "Add multi-region failover for checkout", status: "Done", category: "done", assignee: "Priya N.", points: 8, duedate: "2026-07-15", labels: ["project-ecommerce", "reliability"], comments: [comment("Priya N.", "Failover tested in staging, looks solid.", "2026-08-12T09:00:00.000Z")], eta: "2026-07-20", sprint: SPRINT_12 }),
       issue({ key: "PLAT-202", summary: "Migrate on-call runbooks to auto-generated docs", status: "In Progress", category: "indeterminate", assignee: "Wei L.", points: 5, duedate: "2026-08-25", labels: ["project-ecommerce", "docs"], comments: [comment("Wei L.", "Half the runbooks converted, on track.", "2026-08-13T15:30:00.000Z")], eta: "2026-08-30", sprint: SPRINT_12 }),
@@ -92,6 +107,8 @@ const DATASETS = {
   },
   4568: {
     team: "Team 2 — Checkout & Payments",
+    projectKey: "PAY",
+    projectName: "Checkout & Payments",
     issues: [
       issue({ key: "PAY-301", summary: "Add idempotency keys to payment capture", status: "In Progress", category: "indeterminate", assignee: "Sam R.", points: 8, duedate: "2026-08-20", labels: ["project-ecommerce", "payments"], comments: [comment("Sam R.", "Design reviewed, implementation started.", "2026-08-14T13:00:00.000Z")], sprint: SPRINT_8 }),
       issue({ key: "PAY-302", summary: "Fix double-charge race condition on retry", status: "Done", category: "done", assignee: "Sam R.", points: 5, duedate: "2026-08-01", labels: ["project-ecommerce", "payments", "bug"], comments: [comment("Sam R.", "Fixed and verified in prod.", "2026-08-02T10:00:00.000Z")], sprint: SPRINT_8 }),
@@ -106,6 +123,8 @@ const DATASETS = {
     // workspaces.demo.json omits sprintField for this workspace, so these
     // issues report sprint: null end to end, same as a real Kanban team.
     team: "Team 3 — Security Engineering",
+    projectKey: "SEC",
+    projectName: "Security Engineering",
     issues: [
       issue({ key: "SEC-401", summary: "Rotate all service-to-service credentials", status: "In Progress", category: "indeterminate", assignee: "Alex F.", points: 5, duedate: "2026-08-22", labels: ["project-security"], comments: [comment("Alex F.", "60% rotated, on schedule.", "2026-08-14T09:10:00.000Z")] }),
       issue({ key: "SEC-402", summary: "Post-incident review automation for Sev-1/Sev-2", status: "To Do", category: "new", points: 5, labels: ["project-security", "reliability"] }),
@@ -120,6 +139,27 @@ const DATASETS = {
 function startServer(port, dataset) {
   const server = http.createServer(async (req, res) => {
     const commentMatch = req.url.match(/^\/rest\/api\/3\/issue\/([^/]+)\/comment$/);
+
+    // The three endpoints scripts/setup-jira.mjs uses to test a connection,
+    // list projects, and auto-detect custom field IDs — same shape as real
+    // Jira Cloud, so the wizard works identically against this fixture.
+    if (req.method === "GET" && req.url === "/rest/api/3/myself") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ displayName: "Demo User", emailAddress: "demo@example.com" }));
+      return;
+    }
+
+    if (req.method === "GET" && req.url.startsWith("/rest/api/3/project/search")) {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ values: [{ key: dataset.projectKey, name: dataset.projectName }] }));
+      return;
+    }
+
+    if (req.method === "GET" && req.url === "/rest/api/3/field") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(FIELDS));
+      return;
+    }
 
     if (req.method === "POST" && req.url === "/rest/api/3/search") {
       let body = "";

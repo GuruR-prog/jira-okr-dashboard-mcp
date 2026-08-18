@@ -81,19 +81,45 @@ AI summarize button.
 
 ```bash
 npm install
-cp config/workspaces.example.json config/workspaces.json
-# edit config/workspaces.json — one entry per Jira site/team
-cp .env.example .env
-# fill in one JIRA_<NAME>_API_TOKEN per workspace, plus ANTHROPIC_API_KEY
-
-npm run web-server    # terminal 1 — API on :4000
-npm run web-client    # terminal 2 — UI on :5173
+npm run setup:jira    # interactive wizard — connects to real Jira, writes config for you
+npm run web-server     # terminal 1 — API on :4000
+npm run web-client     # terminal 2 — UI on :5173
 ```
 
 Want to see it working before touching a real Jira account? See
 [`demo/README.md`](demo/README.md) — three fixture Jira servers, a
 ready-made `config/workspaces.demo.json`, and instructions to run the
 whole thing end to end against sample data (comment posting included).
+
+### Connecting Jira without hand-editing JSON
+
+`npm run setup:jira` is the fast path — an interactive wizard
+([`scripts/setup-jira.mjs`](scripts/setup-jira.mjs)) that:
+
+1. Asks for your Jira base URL, email, and an API token
+2. Tests the connection immediately (fails fast with a clear error if
+   something's wrong, rather than a confusing failure three steps later)
+3. Lists your actual projects so you pick one instead of typing a key from memory
+4. **Auto-detects your Story Points, Sprint, and ETA custom field IDs by
+   name** — no more knowing what `customfield_10016` means or hunting for
+   it in Jira's admin settings
+5. Optionally walks through incident severity setup (severityField,
+   severityValues, highSeverityValues) if this project tracks incidents
+6. Writes the finished entry to `config/workspaces.json` and the token to
+   `.env` — both on your own machine; nothing is sent anywhere but Jira
+
+Run it once per team — it appends, so a second run adds a second
+workspace rather than overwriting the first. Prefer to configure by hand,
+or scripting your own setup? `config/workspaces.example.json` still works
+exactly as before; the wizard is a faster path to the same file, not a
+replacement for editing it directly.
+
+Only `baseUrl`, `email`, and `jql` are truly required in a workspace
+entry — everything else (`storyPointsField`, `etaField`, `sprintField`,
+`severityField`, `severityValues`, `highSeverityValues`) is optional and
+degrades gracefully when omitted (see the Sprint/Kanban and incident
+sections below for what "omitted" means in each case). The wizard fills
+in what it can auto-detect and skips the rest rather than guessing.
 
 **How a workspace config works:** each entry in `config/workspaces.json`
 is one Jira site + a JQL scoping which issues belong on the dashboard,
@@ -306,6 +332,8 @@ demo/
 config/
   workspaces.example.json       Template — copy to workspaces.json (gitignored) for your real teams
   oncall.example.json           Template — copy to oncall.json (gitignored) for your real schedules
+scripts/
+  setup-jira.mjs                 Interactive wizard: npm run setup:jira
 ```
 
 ## Contributing

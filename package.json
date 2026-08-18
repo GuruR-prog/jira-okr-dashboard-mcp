@@ -14,6 +14,7 @@
     "packages/*"
   ],
   "scripts": {
+    "setup:jira": "node scripts/setup-jira.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
     "mcp-server": "npm run start --workspace packages/mcp-server",
